@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head lang="zh">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link href="http://libs.useso.com/js/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="http://libs.useso.com/js/jquery/2.1.1/jquery.min.js"></script>
+    <script src="http://libs.useso.com/js/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <title>开始游戏</title>
+    <style>
+        table.score_table,
+        table.score_table>tbody,
+        table.score_table>tbody>tr {
+            width: 100%;
+        }
+        .no_empty:empty {
+            display: none;
+        }
+    </style>
+    <script>
+        nowStatus="";
+        document.addEventListener('DOMContentLoaded',function(){
+            window.current=document.getElementById("current");
+            window.textin=document.getElementById("textin");
+            window.error_div=document.getElementById("error_div");
+            load();
+        });
+        function load() {
+            var xhr=new XMLHttpRequest();
+            xhr.open("get","/gameStatus",true);
+            xhr.onreadystatechange=function() {
+                if(this.readyState!=4)
+                    return;
+                if(this.status!=200) {
+                    error_div.innerText="在获取状态时发生错误 "+this.status;
+                    return;
+                }
+                window.nowStatus=xhr.responseText;
+                var response=JSON.parse(xhr.responseText);
+                if(response["error"]) {
+                    error_div.innerText=response["error"];
+                    return;
+                }
+                current.innerText=response["current"];
+                for(var pos=0;pos<response["players"];pos++) {
+                    document.getElementById("live-"+encodeURIComponent(response["players"][pos]["name"])).
+                        value=response["players"][pos]["live"];
+                }
+            };
+            xhr.send();
+            waitForChange();
+        }
+        function waitForChange() {
+            var xhr=new XMLHttpRequest();
+            xhr.open("post","/waitStatus",true);
+            xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded;");
+            xhr.onreadystatechange=function() {
+                if(this.readyState!=4)
+                    return;
+                if(this.status!=200) {
+                    error_div.innerText="在获取状态时发生错误 "+this.status;
+                    setTimeout(waitForChange,1000);
+                    return;
+                }
+                window.nowStatus=xhr.responseText;
+                var response=JSON.parse(xhr.responseText);
+                if(response["error"]) {
+                    error_div.innerText=response["error"];
+                    setTimeout(waitForChange,1000);
+                    return;
+                }
+                current.innerText=response["current"];
+                for(var pos=0;pos<response["players"];pos++) {
+                    document.getElementById("live-"+encodeURIComponent(response["players"][pos]["name"])).
+                        value=response["players"][pos]["live"];
+                }
+                setTimeout(waitForChange,1000);
+            };
+            xhr.send("now="+encodeURIComponent(nowStatus));
+        }
+        function check_enter(event) {
+            if(event.charCode==13)
+                enter(textin.value);
+            else
+                return true;
+        }
+        function enter(text) {
+            var xhr=new XMLHttpRequest();
+            xhr.open("post","/enter",true);
+            xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded;");
+            xhr.onreadystatechange=function() {
+                if(this.readyState!=4)
+                    return;
+                if(this.status!=200) {
+                    error_div.innerText="在提交文本时发生错误 "+this.status;
+                    return;
+                }
+                var response=JSON.parse(xhr.responseText);
+                if(response["error"]) {
+                    error_div.innerText=response["error"];
+                    return;
+                }
+            };
+            xhr.send("word="+encodeURIComponent(text));
+        }
+    </script>
+</head>
+<body><div class="container">
+    <div class="well well-sm">
+        <h1 id="current">Loading</h1>
+        <input id="textin" onkeypress="check_enter(event)" placeholder="...">
+    </div>
+    <div class="alert alert-danger no_empty" id="error_div"></div>
+    <table class="score_table">
+        % for person in players:
+            <tr>
+                <td>${person['name']|h}</td>
+                <td><progress id="live-${person['name']|h}" value="${person['live']}" max="${MAXLIVE}" style="width: 200px;"></progress></td>
+            </tr>
+        % endfor
+    </table>
+</div></body>
+</html>
