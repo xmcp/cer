@@ -5,7 +5,8 @@ import os
 import sys
 import json
 import time
-from config import validate
+import threading
+import config
 
 server_path=os.path.split(sys.argv[0])[0]
 def post_only():
@@ -14,6 +15,7 @@ def post_only():
         raise cherrypy.HTTPError(405)
 cherrypy.tools.post=cherrypy.Tool('on_start_resource',post_only)
 MAXLIVE=10
+LIFESTEP=5
 
 def auth(gnumber):
     if 'gnumber' in cherrypy.session:
@@ -29,8 +31,29 @@ class Cer:
     game_number=time.time()%100000
     waiting_list={}
     players=[]
-    current='hello'
+    current=config.start_word
     activeNum=0
+
+    def lifeCheck(self):
+        while True:
+            time.sleep(.5)
+            if not self.playing:
+                continue
+            numnow=self.activeNum
+            for _ in range(LIFESTEP*4):
+                time.sleep(.25)
+                if numnow!=self.activeNum:
+                    break
+            else:
+                self.players[numnow]['live']-=1
+                if self.players[numnow]['live']==0:
+                    self.playing=False
+                    self.game_number=time.time()%100000
+
+    def __init__(self):
+        t=threading.Thread(target=self.lifeCheck,args=())
+        t.setDaemon(True)
+        t.start()
 
     def refresh_waiting_list(self):
         time_limit=time.time()-3
@@ -88,12 +111,16 @@ class Cer:
                 before.append(a['name'])
                 if a['name']==name:
                     a['time']+=4
+        if not before:
+            return '没有人准备好'
+        cherrypy.session.release_lock()
         time.sleep(4)
         self.refresh_waiting_list()
         if [a['name'] for a in self.waiting_list.values() if a['okay']]!=before:
             return '有人中途退出'
         self.players=[{'name':a,'live':MAXLIVE} for a in before]
         self.playing=True
+        self.current=config.start_word
         self.activeNum=0
         return '[okay]'
 
@@ -106,9 +133,9 @@ class Cer:
 
     @cherrypy.expose()
     def gameStatus(self):
-        if not auth(self.game_number):
+        if not self.playing:
             return json.dumps({
-                'error':'Not Authed'
+                'error':'[STOP]'
             })
         return json.dumps({
             'current':self.current,
@@ -118,6 +145,7 @@ class Cer:
 
     @cherrypy.expose()
     def waitStatus(self,now):
+        cherrypy.session.release_lock()
         while now==self.gameStatus():
             time.sleep(.5)
         return self.gameStatus()
@@ -133,14 +161,17 @@ class Cer:
             return json.dumps({
                 'error':'Not your turn'
             })
-        msg=validate(self.current,word)
+        msg=config.validate(self.current,word)
         if msg:
             return json.dumps({
                 'error':msg
             })
         self.current=word
+        player=self.players[self.activeNum]
+        if player['live']<MAXLIVE:
+            player['live']+=1
         self.activeNum=(self.activeNum+1)%len(self.players)
-
+        return json.dumps({})
 
 cherrypy.quickstart(Cer(),'/',{
     'global': {
@@ -150,6 +181,6 @@ cherrypy.quickstart(Cer(),'/',{
     },
     '/': {
         'tools.sessions.on':True,
-        'tools.sessions.locking':'explicit',
+        #'tools.sessions.locking':'explicit',
     },
 })

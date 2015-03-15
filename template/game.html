@@ -49,14 +49,20 @@
                 window.nowStatus=xhr.responseText;
                 var response=JSON.parse(xhr.responseText);
                 if(response["error"]) {
+                    if(response["error"]==="[STOP]") {
+                        error_div.innerText="游戏结束";
+                        setTimeout(function(){window.location.assign("/")},1000);
+                        textin.setAttribute("disabled","disabled");
+                        return;
+                    }
                     error_div.innerText=response["error"];
                     setTimeout(waitForChange,1000);
                     return;
                 }
                 current.innerText=response["current"];
-                for(var pos=0;pos<response["players"];pos++) {
-                    document.getElementById("live-"+encodeURIComponent(response["players"][pos]["name"])).
-                        value=response["players"][pos]["live"];
+                for(var pos=0;pos<response["players"].length;pos++) {
+                    document.getElementById("live-"+encodeURIComponent(response["players"][pos]["name"])).value=
+                        response["players"][pos]["live"];
                 }
                 for(var tmp=0;tmp<persons.length;tmp++) {
                     persons[tmp].className="";
@@ -66,7 +72,7 @@
                     textin.removeAttribute("disabled");
                 else
                     textin.setAttribute("disabled","disabled");
-                setTimeout(waitForChange,1000);
+                setTimeout(waitForChange,500);
             };
             xhr.send("now="+encodeURIComponent(nowStatus));
         }
@@ -92,6 +98,7 @@
                     error_div.innerText=response["error"];
                     return;
                 }
+                textin.value="";
             };
             xhr.send("word="+encodeURIComponent(text));
         }
