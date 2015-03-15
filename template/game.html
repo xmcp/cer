@@ -20,40 +20,20 @@
         .no_empty:empty {
             display: none;
         }
+        .turn {
+            background-color: blue;
+        }
     </style>
     <script>
         nowStatus="";
+        yourName="${username|h}";
         document.addEventListener('DOMContentLoaded',function(){
             window.current=document.getElementById("current");
             window.textin=document.getElementById("textin");
             window.error_div=document.getElementById("error_div");
-            load();
-        });
-        function load() {
-            var xhr=new XMLHttpRequest();
-            xhr.open("get","/gameStatus",true);
-            xhr.onreadystatechange=function() {
-                if(this.readyState!=4)
-                    return;
-                if(this.status!=200) {
-                    error_div.innerText="在获取状态时发生错误 "+this.status;
-                    return;
-                }
-                window.nowStatus=xhr.responseText;
-                var response=JSON.parse(xhr.responseText);
-                if(response["error"]) {
-                    error_div.innerText=response["error"];
-                    return;
-                }
-                current.innerText=response["current"];
-                for(var pos=0;pos<response["players"];pos++) {
-                    document.getElementById("live-"+encodeURIComponent(response["players"][pos]["name"])).
-                        value=response["players"][pos]["live"];
-                }
-            };
-            xhr.send();
+            window.persons=document.getElementsByName("js-person");
             waitForChange();
-        }
+        });
         function waitForChange() {
             var xhr=new XMLHttpRequest();
             xhr.open("post","/waitStatus",true);
@@ -78,6 +58,14 @@
                     document.getElementById("live-"+encodeURIComponent(response["players"][pos]["name"])).
                         value=response["players"][pos]["live"];
                 }
+                for(var tmp=0;tmp<persons.length;tmp++) {
+                    persons[tmp].className="";
+                }
+                document.getElementById("person-"+response["turn"]).className="turn";
+                if(response["turn"]==yourName)
+                    textin.removeAttribute("disabled");
+                else
+                    textin.setAttribute("disabled","disabled");
                 setTimeout(waitForChange,1000);
             };
             xhr.send("now="+encodeURIComponent(nowStatus));
@@ -117,7 +105,7 @@
     <div class="alert alert-danger no_empty" id="error_div"></div>
     <table class="score_table">
         % for person in players:
-            <tr>
+            <tr name="js-person" id="person-${person['name']|h}">
                 <td>${person['name']|h}</td>
                 <td><progress id="live-${person['name']|h}" value="${person['live']}" max="${MAXLIVE}" style="width: 200px;"></progress></td>
             </tr>

@@ -5,6 +5,7 @@ import os
 import sys
 import json
 import time
+from config import validate
 
 server_path=os.path.split(sys.argv[0])[0]
 def post_only():
@@ -23,12 +24,13 @@ def auth(gnumber):
             return 'name' in cherrypy.session
     return False
 
-class JieLong:
+class Cer:
     playing=False
     game_number=time.time()%100000
     waiting_list={}
     players=[]
     current='hello'
+    activeNum=0
 
     def refresh_waiting_list(self):
         time_limit=time.time()-3
@@ -92,6 +94,7 @@ class JieLong:
             return '有人中途退出'
         self.players=[{'name':a,'live':MAXLIVE} for a in before]
         self.playing=True
+        self.activeNum=0
         return '[okay]'
 
     @cherrypy.expose()
@@ -109,7 +112,8 @@ class JieLong:
             })
         return json.dumps({
             'current':self.current,
-            'players':self.players
+            'players':self.players,
+            'turn':self.players[self.activeNum]['name']
         })
 
     @cherrypy.expose()
@@ -125,10 +129,20 @@ class JieLong:
             return json.dumps({
                 'error':'Not Authed'
             })
-        self.current=word;
+        if not self.players[self.activeNum]['name']==cherrypy.session['name']:
+            return json.dumps({
+                'error':'Not your turn'
+            })
+        msg=validate(self.current,word)
+        if msg:
+            return json.dumps({
+                'error':msg
+            })
+        self.current=word
+        self.activeNum=(self.activeNum+1)%len(self.players)
 
 
-cherrypy.quickstart(JieLong(),'/',{
+cherrypy.quickstart(Cer(),'/',{
     'global': {
          'engine.autoreload.on':False,
         'server.socket_host':'0.0.0.0',
