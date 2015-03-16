@@ -15,6 +15,13 @@
         .no_empty:empty {
             display: none;
         }
+        .full {
+            width: 100%;
+        }
+        .player {
+            margin: 5px;
+            font-size: large;
+        }
     </style>
     <script>
         status="idle";
@@ -52,7 +59,7 @@
                 plist.innerHTML="";
                 for(var pos=0;pos<pdata.length;pos++) {
                     var tmp=document.createElement("span");
-                    tmp.className="label label-"+(pdata[pos]["okay"]?"success":"default");
+                    tmp.className="player label label-"+(pdata[pos]["okay"]?"success":"default");
                     tmp.innerText=pdata[pos]["name"];
                     plist.appendChild(tmp);
                 }
@@ -112,13 +119,28 @@
     </script>
 </head>
 <body><div class="container">
-    <div class="well well-sm">
-        <input placeholder="昵称" class="form-control" style="width: 200px; display: inline !important;" id="nickname">
-        <button type="button" class="btn btn-primary" id="join_btn" onclick="join()">加入</button>
-        <button type="button" class="btn btn-success" id="okay_btn" onclick="okay()" disabled="disabled">准备</button>
-        <button type="button" class="btn btn-danger" id="start_btn" onclick="start()" disabled="disabled">开始</button>
+    <br />
+    <div class="well well-sm row">
+        <div class="col-sm-6">
+            <input placeholder="昵称" class="form-control" style="display: inline !important;" id="nickname">
+        </div>
+        <div class="col-sm-2">
+            <button type="button" class="btn btn-primary full" id="join_btn" onclick="join()">加入</button>
+        </div>
+        <div class="col-sm-2">
+            <button type="button" class="btn btn-success full" id="okay_btn" onclick="okay()" disabled="disabled">准备</button>
+        </div>
+        <div class="col-sm-2">
+            <button type="button" class="btn btn-danger full" id="start_btn" onclick="start()" disabled="disabled">开始</button>
+        </div>
     </div>
     <div class="alert alert-danger no_empty" id="error_div"></div>
-    <div class="well well-sm" id="plist"></div>
+    <div class="panel panel-primary row">
+    <div class="panel-heading">已加入玩家</div>
+        <div class="panel-body" id="plist"></div>
+        <div class="panel-footer"><small>
+            Cer by <a href="https://github.com/xmcp" target="_blank">@xmcp</a>
+        </small></div>
+    </div>
 </div></body>
 </html>
