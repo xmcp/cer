@@ -10,7 +10,7 @@
         <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
         <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
-    <title>开始游戏</title>
+    <title>Cer</title>
     <style>
         table.score_table,
         table.score_table>tbody,
@@ -20,13 +20,14 @@
         .no_empty:empty {
             display: none;
         }
-        .turn {
-            background-color: blue;
+        .fix_progress {
+            margin-bottom: 0;
         }
     </style>
     <script>
         nowStatus="";
         yourName="${username|h}";
+        maxLive="${MAXLIVE}";
         document.addEventListener('DOMContentLoaded',function(){
             window.current=document.getElementById("current");
             window.textin=document.getElementById("textin");
@@ -61,15 +62,17 @@
                 }
                 current.innerText=response["current"];
                 for(var pos=0;pos<response["players"].length;pos++) {
-                    document.getElementById("live-"+encodeURIComponent(response["players"][pos]["name"])).value=
-                        response["players"][pos]["live"];
+                    document.getElementById("live-"+encodeURIComponent(response["players"][pos]["name"])).style.width=
+                        response["players"][pos]["live"]*100/maxLive+"%";
                 }
                 for(var tmp=0;tmp<persons.length;tmp++) {
                     persons[tmp].className="";
                 }
-                document.getElementById("person-"+response["turn"]).className="turn";
-                if(response["turn"]==yourName)
+                document.getElementById("person-"+response["turn"]).className="info";
+                if(response["turn"]==yourName) {
                     textin.removeAttribute("disabled");
+                    textin.focus();
+                }
                 else
                     textin.setAttribute("disabled","disabled");
                 setTimeout(waitForChange,500);
@@ -105,18 +108,36 @@
     </script>
 </head>
 <body><div class="container">
-    <div class="well well-sm">
-        <h1 id="current">Loading</h1>
-        <input id="textin" onkeypress="check_enter(event)" placeholder="...">
+    <br />
+    <div class="well well-sm row">
+        <div class="col-sm-4">
+            <span id="current" style="font-size: x-large;">Loading</span>
+        </div>
+        <div class="col-sm-8">
+            <input class="form-control" id="textin" onkeypress="check_enter(event)" placeholder="">
+        </div>
     </div>
     <div class="alert alert-danger no_empty" id="error_div"></div>
-    <table class="score_table">
-        % for person in players:
-            <tr name="js-person" id="person-${person['name']|h}">
-                <td>${person['name']|h}</td>
-                <td><progress id="live-${person['name']|h}" value="${person['live']}" max="${MAXLIVE}" style="width: 200px;"></progress></td>
+    <table class="score_table table">
+        <thead>
+            <tr>
+                <th>昵称</th>
+                <th>生命 / ${MAXLIVE}</th>
             </tr>
-        % endfor
+        </thead>
+        <tbody>
+            % for person in players:
+                <tr name="js-person" id="person-${person['name']|h}">
+                    <td><b>${person['name']|h}</b></td>
+                    <td>
+                        <div class="progress fix_progress">
+                            <div id="live-${person['name']|h}" class="progress-bar" style="width: ${person['live']/MAXLIVE*100}%;">
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            % endfor
+        </tbody>
     </table>
 </div></body>
 </html>
