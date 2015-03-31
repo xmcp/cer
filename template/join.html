@@ -12,15 +12,19 @@
     <![endif]-->
     <title>加入 Cer</title>
     <style>
-        .no_empty:empty {
-            display: none;
-        }
         .full {
             width: 100%;
         }
         .player {
             margin: 5px;
             font-size: large;
+        }
+        #plist:empty:before {
+            content: "没有玩家加入";
+        }
+        .fade {
+            opacity: 0;
+            transition: opacity 1s;
         }
     </style>
     <script>
@@ -35,6 +39,11 @@
             setInterval(refresh,1500);
             refresh();
         });
+        function msg(s) {
+            error_div.innerText=s;
+            error_div.classList.remove("fade");
+            setTimeout(function(){error_div.classList.add("fade");},500);
+        }
         function refresh(){
             var xhr=new XMLHttpRequest();
             xhr.open("post","/ping");
@@ -43,7 +52,7 @@
                 if(this.readyState!=4)
                     return;
                 if(this.status!=200) {
-                    error_div.innerText="在刷新列表时发生了错误 "+this.status;
+                    msg("在刷新列表时发生了错误 "+this.status);
                     return;
                 }
                 var response=JSON.parse(this.responseText);
@@ -51,7 +60,7 @@
                     if(response["error"]=="[start]")
                         window.location.assign("/game");
                     else
-                        error_div.innerText=response["error"];
+                        msg(response["error"]);
                     return;
                 }
                 else
@@ -82,6 +91,7 @@
                 okay_btn.removeAttribute("disabled");
                 nickname.setAttribute("disabled","disabled");
             }
+            refresh();
         }
         function okay() {
             if(status!="okay") {
@@ -96,6 +106,7 @@
                 join_btn.removeAttribute("disabled");
                 start_btn.setAttribute("disabled","disabled");
             }
+            refresh();
         }
         function start() {
             var xhr=new XMLHttpRequest();
@@ -105,22 +116,22 @@
                 if(this.readyState!=4)
                     return;
                 if(this.status!=200) {
-                    error_div.innerText="在开始游戏时发生了错误 "+this.status;
+                    msg("在开始游戏时发生了错误 "+this.status);
                     return;
                 }
                 if(this.responseText=="[okay]")
                     window.location.assign("/game");
                 else
-                    error_div.innerText=this.responseText;
+                    msg(this.responseText);
             };
-            error_div.innerText="请稍候……";
-            xhr.send("name="+encodeURIComponent(nickname.value));
+            msg("请稍候……");
+            xhr.send();
         }
     </script>
 </head>
 <body><div class="container">
     <br />
-    <div class="well well-lg row">
+    <div class="well well-lg"><div class="row">
         <div class="col-sm-6">
             <input placeholder="昵称" class="form-control" style="display: inline !important;" id="nickname">
         </div>
@@ -133,14 +144,14 @@
         <div class="col-sm-2">
             <button type="button" class="btn btn-danger full" id="start_btn" onclick="start()" disabled="disabled">开始</button>
         </div>
-    </div>
-    <div class="alert alert-danger no_empty" id="error_div"></div>
-    <div class="panel panel-primary row">
-    <div class="panel-heading">已加入玩家</div>
+    </div></div>
+    <div class="alert alert-danger fade" id="error_div">……</div>
+    <div class="panel panel-primary">
+        <div class="panel-heading">已加入玩家</div>
         <div class="panel-body" id="plist"></div>
-        <div class="panel-footer"><small>
-            Cer by <a href="https://github.com/xmcp" target="_blank">@xmcp</a>
-        </small></div>
-    </div>
+        <div class="panel-footer">
+            <span>当前正在使用 <b>${desc|h}</b></span>
+            <small class="pull-right">Cer by <a href="https://github.com/xmcp" target="_blank">@xmcp</a></small>
+        </div></div>
 </div></body>
 </html>

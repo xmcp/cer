@@ -17,11 +17,12 @@
         table.score_table>tbody>tr {
             width: 100%;
         }
-        .no_empty:empty {
-            display: none;
-        }
         .fix_progress {
             margin-bottom: 0;
+        }
+        .fade {
+            opacity: 0;
+            transition: opacity 1s;
         }
     </style>
     <script>
@@ -35,6 +36,11 @@
             window.persons=document.getElementsByName("js-person");
             waitForChange();
         });
+        function msg(s) {
+            error_div.innerText=s;
+            error_div.classList.remove("fade");
+            setTimeout(function(){error_div.classList.add("fade");},500);
+        }
         function waitForChange() {
             var xhr=new XMLHttpRequest();
             xhr.open("post","/wait_status",true);
@@ -43,7 +49,7 @@
                 if(this.readyState!=4)
                     return;
                 if(this.status!=200) {
-                    error_div.innerText="在获取状态时发生错误 "+this.status;
+                    msg("在获取状态时发生错误 "+this.status);
                     setTimeout(waitForChange,1000);
                     return;
                 }
@@ -51,12 +57,12 @@
                 var response=JSON.parse(xhr.responseText);
                 if(response["error"]) {
                     if(response["error"]==="[STOP]") {
-                        error_div.innerText="游戏结束";
-                        setTimeout(function(){window.location.assign("/")},1000);
+                        msg("游戏结束");
+                        setTimeout(function(){window.location.assign("/")},2000);
                         textin.setAttribute("disabled","disabled");
                         return;
                     }
-                    error_div.innerText=response["error"];
+                    msg(response["error"]);
                     setTimeout(waitForChange,1000);
                     return;
                 }
@@ -86,6 +92,9 @@
                 return true;
         }
         function enter(text) {
+            if(text==="" && !confirm("花费 3 点生命跳过此回合？"))
+                return;
+            msg("正在提交……");
             var xhr=new XMLHttpRequest();
             xhr.open("post","/enter",true);
             xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded;");
@@ -93,15 +102,16 @@
                 if(this.readyState!=4)
                     return;
                 if(this.status!=200) {
-                    error_div.innerText="在提交文本时发生错误 "+this.status;
+                    msg("在提交文本时发生错误 "+this.status);
                     return;
                 }
                 var response=JSON.parse(xhr.responseText);
                 if(response["error"]) {
-                    error_div.innerText=response["error"];
+                    msg(response["error"]);
                     return;
                 }
                 textin.value="";
+                msg("提交成功");
             };
             xhr.send("word="+encodeURIComponent(text));
         }
@@ -109,15 +119,15 @@
 </head>
 <body><div class="container">
     <br />
-    <div class="well well-sm row">
+    <div class="well well-sm"><div class="row">
         <div class="col-sm-4">
             <span id="current" style="font-size: x-large;">Loading</span>
         </div>
         <div class="col-sm-8">
             <input class="form-control" id="textin" onkeypress="check_enter(event)" placeholder="">
         </div>
-    </div>
-    <div class="alert alert-danger no_empty" id="error_div"></div>
+    </div></div>
+    <div class="alert alert-danger fade" id="error_div">……</div>
     <table class="score_table table">
         <thead>
             <tr>
