@@ -47,20 +47,30 @@ class Cer:
         self.playing=False
         self.game_number=time.time()%100000
 
+    def _next_turn(self):
+        self.activeNum=(self.activeNum+1)%len(self.players)
+        while self.players[self.activeNum]['live'] is None:
+            self.activeNum=(self.activeNum+1)%len(self.players)
+
     def _life_check(self):
         while True:
             time.sleep(.25)
             if not self.playing:
                 continue
             numnow=self.activeNum
-            for _ in range(LIFESTEP*4):
+            for _ in range(int(LIFESTEP*4)):
                 time.sleep(.25)
                 if numnow!=self.activeNum:
                     break
             else:
-                self.players[numnow]['live']-=1
-                if self.players[numnow]['live']<0:
-                    self._stop_game()
+                if self.players[numnow] is not None:
+                    self.players[numnow]['live']-=1
+                    if self.players[numnow]['live']<0:
+                        self.players[numnow]['live']=None
+                        if len([x for x in self.players if x['live'] is not None])<2:
+                            self._stop_game()
+                        else:
+                            self._next_turn()
 
     def _refresh_waiting_list(self):
         time_limit=time.time()-3
@@ -69,22 +79,22 @@ class Cer:
                 del self.waiting_list[name]
 
     def _skip_turn(self,player):
-        QIPA='内部错误: 配置文件没有返回正确的结果'
+        qipa='内部错误: 配置文件没有返回正确的结果'
         if self.players[player]['live']<=3:
             return '错误: 生命不足'
         result=config.skip(self.current)
         if 'valid' not in result:
-            return QIPA
+            return qipa
         if result['valid']:
             if 'after' not in result:
-                return QIPA
+                return qipa
             self.current=result['after']
             self.players[player]['live']-=3
-            self.activeNum=(self.activeNum+1)%len(self.players)
+            self._next_turn()
             return None
         else:
             if 'reason' not in result:
-                return QIPA
+                return qipa
             return '错误: %s'%result['reason']
 
     def __init__(self):
@@ -141,7 +151,7 @@ class Cer:
         })
 
     @cherrypy.expose()
-    #@cherrypy.tools.post()
+    @cherrypy.tools.post()
     def start(self):
         before=[]
         with self.start_lock:
@@ -155,10 +165,10 @@ class Cer:
             if len(before)<=1:
                 return '人数不足'
             cherrypy.session.release_lock()
-            time.sleep(3)
+            time.sleep(2)
             self._refresh_waiting_list()
             if [a['name'] for a in self.waiting_list.values() if a['okay']]!=before:
-                return '有人中途退出'
+                return '有人掉线'
             self._start_game(before)
             return '[okay]'
 
@@ -215,7 +225,7 @@ class Cer:
         player=self.players[self.activeNum]
         if player['live']<MAXLIVE:
             player['live']+=1
-        self.activeNum=(self.activeNum+1)%len(self.players)
+        self._next_turn()
         self.wordCount+=1
         return json.dumps({})
 

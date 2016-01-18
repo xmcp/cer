@@ -1,4 +1,7 @@
 <!DOCTYPE html>
+<%!
+  import base64
+%>
 <html>
 <head lang="zh">
     <meta charset="UTF-8">
@@ -24,23 +27,29 @@
             opacity: 0;
             transition: opacity 1s;
         }
+        .hidden {
+            display:none;
+        }
     </style>
     <script>
         nowStatus="";
-        yourName="${username|h}";
+        %if username:
+            yourName=atob("${base64.b64encode(username.encode()).decode()}");
+        %else:
+            yourName="";
+        %endif
         maxLive="${MAXLIVE}";
         document.addEventListener('DOMContentLoaded',function(){
-            window.current=document.getElementById("current");
-            window.counter=document.getElementById("counter");
-            window.textin=document.getElementById("textin");
-            window.error_div=document.getElementById("error_div");
-            window.persons=document.getElementsByName("js-person");
+            window.current=$("#current");
+            window.counter=$("#counter");
+            window.textin=$("#textin");
+            window.error_div=$("#error_div");
+            window.persons=$("[name=js-person]");
             waitForChange();
         });
         function msg(s) {
-            error_div.innerText=s;
-            error_div.classList.remove("fade");
-            setTimeout(function(){error_div.classList.add("fade");},500);
+            error_div.text(s).removeClass("fade");
+            setTimeout(function(){error_div.addClass("fade");},500);
         }
         function waitForChange() {
             var xhr=new XMLHttpRequest();
@@ -67,29 +76,33 @@
                     setTimeout(waitForChange,1000);
                     return;
                 }
-                current.innerText=response["current"];
-                counter.innerText=response["count"];
+                current.text(response["current"]);
+                counter.text(response["count"]);
                 for(var pos=0;pos<response["players"].length;pos++) {
-                    document.getElementById("live-"+encodeURIComponent(response["players"][pos]["name"])).style.width=
-                        response["players"][pos]["live"]*100/maxLive+"%";
+                    if(response["players"][pos]["live"]!==null)
+                        $("#live-"+btoa(response["players"][pos]["name"]).replace(/=/g,'_')).css("width",
+                            response["players"][pos]["live"]*100/maxLive+"%");
+                    else if($("#diebar-"+btoa(response["players"][pos]["name"]).replace(/=/g,'_')).hasClass("hidden")) {
+                        $("#diebar-"+btoa(response["players"][pos]["name"]).replace(/=/g,'_')).removeClass("hidden");
+                        $("#livebar-"+btoa(response["players"][pos]["name"]).replace(/=/g,'_')).addClass("hidden");
+                        $("#die-"+btoa(response["players"][pos]["name"]).replace(/=/g,'_')).text("享年 "+response["count"]+" 回合");
+                    }
                 }
-                for(var tmp=0;tmp<persons.length;tmp++) {
-                    persons[tmp].className="";
-                }
-                document.getElementById("person-"+response["turn"]).className="info";
+                persons.removeClass();
+                $("#person-"+btoa(response["turn"]).replace(/=/g,'_')).addClass("info");
                 if(response["turn"]==yourName) {
-                    textin.removeAttribute("disabled");
+                    textin.removeAttr("disabled");
                     textin.focus();
                 }
                 else
-                    textin.setAttribute("disabled","disabled");
+                    textin.attr("disabled","disabled");
                 setTimeout(waitForChange,250);
             };
             xhr.send("now="+encodeURIComponent(nowStatus));
         }
         function check_enter(event) {
-            if(event.charCode==13)
-                enter(textin.value);
+            if(event.keyCode==13)
+                enter(textin.val());
             else
                 return true;
         }
@@ -112,7 +125,7 @@
                     msg(response["error"]);
                     return;
                 }
-                textin.value="";
+                textin.val("");
                 msg("提交成功");
             };
             xhr.send("word="+encodeURIComponent(text));
@@ -122,11 +135,11 @@
 <body><div class="container">
     <br />
     <div class="well well-sm"><div class="row">
-        <div class="col-sm-4" style="font-size: x-large;">
+        <div class="col-xs-5" style="font-size: x-large;">
             <span id="counter" class="label label-default">0</span>&nbsp;
-            <span id="current"Loading</span>
+            <span id="current">Loading</span>
         </div>
-        <div class="col-sm-8">
+        <div class="col-xs-7">
             <input class="form-control" id="textin" onkeypress="check_enter(event)" placeholder="">
         </div>
     </div></div>
@@ -134,17 +147,26 @@
     <table class="score_table table">
         <thead>
             <tr>
-                <th>昵称</th>
-                <th>生命 / ${MAXLIVE}</th>
+                <th style="width: 50%">昵称</th>
+                <th style="width: 50%">生命 / ${MAXLIVE}</th>
             </tr>
         </thead>
         <tbody>
             % for person in players:
-                <tr name="js-person" id="person-${person['name']|h}">
-                    <td><b>${person['name']|h}</b></td>
+                <% b64name=base64.b64encode(person['name'].encode()).decode().replace('=','_') %>
+                <tr name="js-person" id="person-${b64name}">
                     <td>
-                        <div class="progress fix_progress">
-                            <div id="live-${person['name']|h}" class="progress-bar" style="width: ${person['live']/MAXLIVE*100}%;">
+                        <b>${person['name']|h}</b>
+                        ${'&nbsp;<span class="glyphicon glyphicon-user"></span>' if username==person['name'] else ''}
+                    </td>
+                    <td>
+                        <div class="progress fix_progress ${'hidden' if person['live'] is None else ''}" id="livebar-${b64name}">
+                            <div id="live-${b64name}" class="progress-bar" style="width: ${(person['live'] or 0)/MAXLIVE*100}%;">
+                            </div>
+                        </div>
+                        <div class="progress fix_progress ${'' if person['live'] is None else 'hidden'}" id="diebar-${b64name}">
+                            <div id="die-${b64name}" class="progress-bar progress-bar-danger progress-bar-striped" style="width: 100%">
+                                R.I.P.
                             </div>
                         </div>
                     </td>

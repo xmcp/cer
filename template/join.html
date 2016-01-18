@@ -30,19 +30,19 @@
     <script>
         status="idle";
         document.addEventListener('DOMContentLoaded',function(){
-            window.join_btn=document.getElementById("join_btn");
-            window.okay_btn=document.getElementById("okay_btn");
-            window.start_btn=document.getElementById("start_btn");
-            window.plist=document.getElementById("plist");
-            window.nickname=document.getElementById("nickname");
-            window.error_div=document.getElementById("error_div");
+            window.join_btn=$("#join_btn");
+            window.okay_btn=$("#okay_btn");
+            window.start_btn=$("#start_btn");
+            window.plist=$("#plist");
+            window.nickname=$("#nickname");
+            window.error_div=$("#error_div");
             setInterval(refresh,1500);
             refresh();
         });
         function msg(s) {
-            error_div.innerText=s;
-            error_div.classList.remove("fade");
-            setTimeout(function(){error_div.classList.add("fade");},500);
+            error_div.text(s);
+            error_div.removeClass("fade");
+            setTimeout(function(){error_div.addClass("fade");},500);
         }
         function refresh(){
             var xhr=new XMLHttpRequest();
@@ -65,46 +65,46 @@
                 }
                 else
                     var pdata=response["plist"];
-                plist.innerHTML="";
+                plist.html("");
                 for(var pos=0;pos<pdata.length;pos++) {
                     var tmp=document.createElement("span");
                     tmp.className="player label label-"+(pdata[pos]["okay"]?"success":"default");
-                    tmp.innerText=pdata[pos]["name"];
-                    plist.appendChild(tmp);
+                    tmp.textContent=pdata[pos]["name"];
+                    plist.append(tmp);
                 }
             };
             xhr.send(
                 "status="+status+"&"+
-                "name="+encodeURIComponent(nickname.value)
+                "name="+encodeURIComponent(nickname.val())
             );
         }
         function join() {
             if(status!="idle") {
-                join_btn.innerText="加入";
+                join_btn.text("加入");
                 status="idle";
-                okay_btn.setAttribute('disabled','disabled');
-                nickname.removeAttribute("disabled");
+                okay_btn.attr('disabled','disabled');
+                nickname.removeAttr("disabled");
             }
             else {
-                join_btn.innerText="取消加入";
+                join_btn.text("取消加入");
                 status="join";
-                okay_btn.removeAttribute("disabled");
-                nickname.setAttribute("disabled","disabled");
+                okay_btn.removeAttr("disabled");
+                nickname.attr("disabled","disabled");
             }
             refresh();
         }
         function okay() {
             if(status!="okay") {
-                okay_btn.innerText="取消准备";
+                okay_btn.text("取消准备");
                 status="okay";
-                join_btn.setAttribute("disabled","disabled");
-                start_btn.removeAttribute("disabled");
+                join_btn.attr("disabled","disabled");
+                start_btn.removeAttr("disabled");
             }
             else {
-                okay_btn.innerText="准备";
+                okay_btn.text("准备");
                 status="join";
-                join_btn.removeAttribute("disabled");
-                start_btn.setAttribute("disabled","disabled");
+                join_btn.removeAttr("disabled");
+                start_btn.attr("disabled","disabled");
             }
             refresh();
         }
