@@ -15,7 +15,7 @@ def post_only():
         raise cherrypy.HTTPError(405)
 cherrypy.tools.post=cherrypy.Tool('on_start_resource',post_only)
 MAXLIVE=10
-LIFESTEP=3
+LIFESTEP=2
 
 def auth(gnumber):
     if 'gnumber' in cherrypy.session:
@@ -34,12 +34,14 @@ class Cer:
     players=[]
     current='N/A'
     activeNum=0
+    wordCount=0
 
     def _start_game(self,players):
         self.players=[{'name':a,'live':MAXLIVE} for a in players]
         self.playing=True
         self.current=config.init()
         self.activeNum=0
+        self.wordCount=1
 
     def _stop_game(self):
         self.playing=False
@@ -112,9 +114,17 @@ class Cer:
             return json.dumps({
                 'error':'[start]'
             })
+        if len(name)>15:
+            return json.dumps({
+                'error':'昵称太长'
+            })
         self._refresh_waiting_list()
         if status!='idle':
             if name not in self.waiting_list:
+                if len(self.waiting_list)>7:
+                    return json.dumps({
+                        'error':'人数已满'
+                    })
                 self.waiting_list[name]={'name':name,'time':time.time(),'okay':status=='okay'}
                 cherrypy.session['gnumber']=self.game_number
                 cherrypy.session['name']=name
@@ -131,7 +141,7 @@ class Cer:
         })
 
     @cherrypy.expose()
-    @cherrypy.tools.post()
+    #@cherrypy.tools.post()
     def start(self):
         before=[]
         with self.start_lock:
@@ -145,7 +155,7 @@ class Cer:
             if len(before)<=1:
                 return '人数不足'
             cherrypy.session.release_lock()
-            time.sleep(4)
+            time.sleep(3)
             self._refresh_waiting_list()
             if [a['name'] for a in self.waiting_list.values() if a['okay']]!=before:
                 return '有人中途退出'
@@ -167,14 +177,15 @@ class Cer:
         return json.dumps({
             'current':self.current,
             'players':self.players,
-            'turn':self.players[self.activeNum]['name']
+            'turn':self.players[self.activeNum]['name'],
+            'count':self.wordCount,
         })
 
     @cherrypy.expose()
     def wait_status(self,now):
         cherrypy.session.release_lock()
         while now==self.game_status():
-            time.sleep(.25)
+            time.sleep(.2)
         return self.game_status()
 
     @cherrypy.expose()
@@ -205,6 +216,7 @@ class Cer:
         if player['live']<MAXLIVE:
             player['live']+=1
         self.activeNum=(self.activeNum+1)%len(self.players)
+        self.wordCount+=1
         return json.dumps({})
 
 
@@ -213,6 +225,7 @@ cherrypy.quickstart(Cer(),'/',{
         'engine.autoreload.on':False,
         'server.socket_host':'0.0.0.0',
         'server.socket_port':7654,
+        'server.thread_pool':20,
     },
     '/': {
         'tools.sessions.on':True,

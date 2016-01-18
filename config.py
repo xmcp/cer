@@ -11,7 +11,7 @@ import random
 history=set()
 with open('dict.txt','r') as f:
     words=set(f.read().split('\n'))
-description='经典规则' #Briefly introduce this config
+description='“X可以随便接”规则' #Briefly introduce this config
 
 def init():
     """ Called when a game is about to start.
@@ -31,9 +31,11 @@ def validate(before,after):
     """
     if after in history:
         return '单词在历史记录中'
+    elif not after.isalpha():
+        return '只能包含字母'
     elif before[-1]!=after[0]:
         return '首字母不符合要求'
-    elif after not in words:
+    elif before[-1]!='x' and after not in words:
         return '单词不在字典中'
     history.add(after)
 

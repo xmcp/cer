@@ -31,6 +31,7 @@
         maxLive="${MAXLIVE}";
         document.addEventListener('DOMContentLoaded',function(){
             window.current=document.getElementById("current");
+            window.counter=document.getElementById("counter");
             window.textin=document.getElementById("textin");
             window.error_div=document.getElementById("error_div");
             window.persons=document.getElementsByName("js-person");
@@ -67,6 +68,7 @@
                     return;
                 }
                 current.innerText=response["current"];
+                counter.innerText=response["count"];
                 for(var pos=0;pos<response["players"].length;pos++) {
                     document.getElementById("live-"+encodeURIComponent(response["players"][pos]["name"])).style.width=
                         response["players"][pos]["live"]*100/maxLive+"%";
@@ -81,7 +83,7 @@
                 }
                 else
                     textin.setAttribute("disabled","disabled");
-                setTimeout(waitForChange,500);
+                setTimeout(waitForChange,250);
             };
             xhr.send("now="+encodeURIComponent(nowStatus));
         }
@@ -120,8 +122,9 @@
 <body><div class="container">
     <br />
     <div class="well well-sm"><div class="row">
-        <div class="col-sm-4">
-            <span id="current" style="font-size: x-large;">Loading</span>
+        <div class="col-sm-4" style="font-size: x-large;">
+            <span id="counter" class="label label-default">0</span>&nbsp;
+            <span id="current"Loading</span>
         </div>
         <div class="col-sm-8">
             <input class="form-control" id="textin" onkeypress="check_enter(event)" placeholder="">
