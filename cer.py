@@ -21,6 +21,8 @@ def auth(gnumber):
     if 'gnumber' in cherrypy.session:
         if cherrypy.session['gnumber']!=gnumber:
             del cherrypy.session['gnumber']
+            if 'name' in cherrypy.session:
+                del cherrypy.session['name']
             return False
         else:
             return 'name' in cherrypy.session
@@ -90,6 +92,7 @@ class Cer:
                 return qipa
             self.current=result['after']
             self.players[player]['live']-=3
+            self.wordCount+=1
             self._next_turn()
             return None
         else:
@@ -146,9 +149,15 @@ class Cer:
                 tmp=self.waiting_list[name]
                 tmp['time']=time.time()
                 tmp['okay']=status=='okay'
-        return json.dumps({
-            'plist':list(self.waiting_list.values())
-        })
+                return json.dumps({
+                    'plist':list(self.waiting_list.values())
+                })
+        else:
+            if 'name' in cherrypy.session:
+                del cherrypy.session['name']
+            return json.dumps({
+                'plist':list(self.waiting_list.values())
+            })
 
     @cherrypy.expose()
     @cherrypy.tools.post()
@@ -176,8 +185,10 @@ class Cer:
     def game(self):
         if not self.playing:
             raise cherrypy.HTTPRedirect("/join")
+        auth(self.game_number) # session cleanup
         return Template(filename=os.path.join(server_path,'template/game.html'),input_encoding='utf-8')\
-            .render(players=self.players,username=cherrypy.session['name'] if 'name' in cherrypy.session else None,MAXLIVE=MAXLIVE)
+            .render(players=self.players,username=cherrypy.session['name'] if 'name' in cherrypy.session else None,
+            MAXLIVE=MAXLIVE,desc=config.description)
 
     def game_status(self):
         if not self.playing:

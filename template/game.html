@@ -15,6 +15,9 @@
     <![endif]-->
     <title>Cer</title>
     <style>
+        body {
+            transition: background-color .25s;
+        }
         table.score_table,
         table.score_table>tbody,
         table.score_table>tbody>tr {
@@ -29,6 +32,9 @@
         }
         .hidden {
             display:none;
+        }
+        #textin {
+            font-size: large;
         }
     </style>
     <script>
@@ -93,9 +99,12 @@
                 if(response["turn"]==yourName) {
                     textin.removeAttr("disabled");
                     textin.focus();
+                    $("body").css("background-color","#ffc");
                 }
-                else
+                else {
                     textin.attr("disabled","disabled");
+                    $("body").css("background-color","#fff");
+                }
                 setTimeout(waitForChange,250);
             };
             xhr.send("now="+encodeURIComponent(nowStatus));
@@ -157,7 +166,7 @@
                 <tr name="js-person" id="person-${b64name}">
                     <td>
                         <b>${person['name']|h}</b>
-                        ${'&nbsp;<span class="glyphicon glyphicon-user"></span>' if username==person['name'] else ''}
+                        ${' &nbsp; <span class="glyphicon glyphicon-user"></span>' if username==person['name'] else ''}
                     </td>
                     <td>
                         <div class="progress fix_progress ${'hidden' if person['live'] is None else ''}" id="livebar-${b64name}">
@@ -174,5 +183,10 @@
             % endfor
         </tbody>
     </table>
+    <br /><br /><br />
+    <div class="well well-sm">
+        <span>当前正在使用 <b>${desc|h}</b></span>
+        <small class="pull-right">Cer by <a href="https://github.com/xmcp" target="_blank">@xmcp</a></small>
+    </div>
 </div></body>
 </html>
