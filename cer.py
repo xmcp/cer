@@ -82,6 +82,8 @@ class Cer:
 
     def _skip_turn(self,player):
         qipa='内部错误: 配置文件没有返回正确的结果'
+        if self.players[self.activeNum]['name']!=player:
+            return '错误: 不是你的回合'
         if self.players[player]['live']<=3:
             return '错误: 生命不足'
         result=config.skip(self.current)
@@ -133,8 +135,12 @@ class Cer:
             })
         self._refresh_waiting_list()
         if status!='idle':
+            if not name:
+                return json.dumps({
+                    'error':'请输入昵称'
+                })
             if name not in self.waiting_list:
-                if len(self.waiting_list)>7:
+                if len(self.waiting_list)>8:
                     return json.dumps({
                         'error':'人数已满'
                     })

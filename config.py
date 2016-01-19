@@ -29,6 +29,7 @@ def validate(before,after):
     :param after: The player's word.
     :return: Returns a false-like object if the attempt is valid; otherwise returns a description str.
     """
+    after=after.strip()
     if after in history:
         return '单词在历史记录中'
     elif not after.isalpha():

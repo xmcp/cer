@@ -22,9 +22,18 @@
         #plist:empty:before {
             content: "没有玩家加入";
         }
+        #backgrounder {
+            position:absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            opacity: 0;
+        }
         .fade {
             opacity: 0;
             transition: opacity 1s;
+        }
+        body {
+            transition: background-color .25s;
         }
     </style>
     <script>
@@ -99,12 +108,15 @@
                 status="okay";
                 join_btn.attr("disabled","disabled");
                 start_btn.removeAttr("disabled");
+                $("body").css("background-color","#dfd")
+                msg("离开此页面会自动取消准备")
             }
             else {
                 okay_btn.text("准备");
                 status="join";
                 join_btn.removeAttr("disabled");
                 start_btn.attr("disabled","disabled");
+                $("body").css("background-color","#fff")
             }
             refresh();
         }
@@ -127,9 +139,13 @@
             msg("请稍候……");
             xhr.send();
         }
+        function _unjoin() {
+            if(status=="okay")
+                okay();
+        }
     </script>
 </head>
-<body><div class="container">
+<body onblur="_unjoin()"><div class="container">
     <br />
     <div class="well well-lg"><div class="row">
         <div class="col-xs-6">
