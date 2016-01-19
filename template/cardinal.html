@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>Cardinal</title>
+    <script src="/static/bootstrap/js/jquery-1.11.3.min.js"></script>
+    <style>
+        @font-face {
+            font-family: SAO;
+            src: url(/static/sao_ui.otf);
+        }
+        body {
+            background: url(/static/bg.jpg) fixed no-repeat center; background-size: cover;
+            font-family: SAO, Consolas, monospace !important;
+            letter-spacing: 1px;
+        }
+        #container {
+          top: 0; bottom: 0;  left: 0; right: 0;  width: 400px; height: 150px; position: absolute;
+          margin: auto; text-align: center;
+          padding: 20px; border-radius:10px;
+          background-color: rgba(255,255,255,.75);
+          overflow-y: auto;
+        }
+        #result {
+            font-size: xx-large;
+        }
+        #input-bar {
+            font-size: x-large;
+            font-family: SAO, Consolas, monospace !important;
+            letter-spacing: 1px;
+        }
+    </style>
+    <script>
+        function enter(cmd) {
+            function msg(x) {
+                $("#result").text(x);
+            }
+            var xhr=new XMLHttpRequest();
+            xhr.open("post","/cardinal",true);
+            xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded;");
+            xhr.onreadystatechange=function() {
+                if(this.readyState!=4)
+                    return;
+                if(this.status!=200)
+                    msg("AJAX Error "+this.status);
+                else
+                    msg(xhr.responseText);
+                $("#input-bar").val("");
+            };
+            xhr.send("cmd="+encodeURIComponent(cmd));
+        }
+        function check(event) {
+            if(event.keyCode==13)
+                enter($("#input-bar").val());
+            else
+                return true;
+        }
+    </script>
+</head>
+<body><div id="container">
+    <h1 id="result">Welcome to Words Art Online!</h1>
+    <input id="input-bar" placeholder=" Cardinal" onkeypress="check(event)">
+</div></body>
+</html>

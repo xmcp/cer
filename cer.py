@@ -38,6 +38,10 @@ class Cer:
     activeNum=0
     wordCount=0
 
+    cardinal_paused=False
+    cardinal_banip=set()
+    cardinal_banname=set()
+
     def _start_game(self,players):
         self.players=[{'name':a,'live':MAXLIVE} for a in players]
         self.playing=True
@@ -62,7 +66,7 @@ class Cer:
             numnow=self.activeNum
             for _ in range(int(LIFESTEP*4)):
                 time.sleep(.25)
-                if numnow!=self.activeNum:
+                if numnow!=self.activeNum or self.cardinal_paused:
                     break
             else:
                 if self.players[numnow] is not None:
@@ -133,6 +137,10 @@ class Cer:
             return json.dumps({
                 'error':'昵称太长'
             })
+        if name in self.cardinal_banname or cherrypy.request.remote.ip in self.cardinal_banip:
+            return json.dumps({
+                'error':'您被封禁了，请节哀顺变'
+            })
         self._refresh_waiting_list()
         if status!='idle':
             if not name:
@@ -184,6 +192,7 @@ class Cer:
             self._refresh_waiting_list()
             if [a['name'] for a in self.waiting_list.values() if a['okay']]!=before:
                 return '有人掉线'
+            self.cardinal_paused=False
             self._start_game(before)
             return '[okay]'
 
@@ -222,6 +231,10 @@ class Cer:
             return json.dumps({
                 'error':'Not Authed'
             })
+        if cherrypy.session['name'] in self.cardinal_banname or cherrypy.request.remote.ip in self.cardinal_banip:
+            return json.dumps({
+                'error':'您被封禁了，请节哀顺变'
+            })
         if not word:
             errcode=self._skip_turn(self.activeNum)
             if errcode:
@@ -246,6 +259,71 @@ class Cer:
         self.wordCount+=1
         return json.dumps({})
 
+    @cherrypy.expose()
+    def cardinal(self,cmd=None):
+        if cmd is None:
+             return Template(filename=os.path.join(server_path,'template/cardinal.html'),input_encoding='utf-8').render()
+        line=cmd.split(' ')
+        if line==['']:
+            return 'Cardinal Ready'
+        elif line==['game','pause']:
+            self.cardinal_paused=not self.cardinal_paused
+            return 'Pause Flag Set to %r'%self.cardinal_paused
+        elif line==['game','stop']:
+            if self.playing:
+                self._stop_game()
+                return 'Game Stopped'
+            else:
+                return 'Error: Not Playing'
+        elif line[:2]==['ban','name']:
+            toban=' '.join(line[2:])
+            if toban in self.cardinal_banname:
+                self.cardinal_banname.remove(toban)
+                return 'Player Unbanned'
+            else:
+                self.cardinal_banname.add(toban)
+                return 'Player Banned'
+        elif line[:2]==['ban','ip']:
+            toban=' '.join(line[2:])
+            if toban in self.cardinal_banip:
+                self.cardinal_banip.remove(toban)
+                return 'IP Unbanned'
+            else:
+                self.cardinal_banip.add(toban)
+                return 'IP Banned'
+        elif line==['ban','clear']:
+            self.cardinal_banname.clear()
+            self.cardinal_banip.clear()
+            return 'Ban List Cleared'
+        elif line[:2]==['player','kill'] and len(line)==3:
+            tokill=int(line[2])
+            self.players[tokill]['live']=None
+            return 'Player Killed'
+        elif line[:2]==['player','heal'] and len(line)==3:
+            torev=int(line[2])
+            if self.players[torev]['live'] is None:
+                return 'Error: Player is Dead'
+            else:
+                self.players[torev]['live']=MAXLIVE
+                return 'Player Healed'
+        elif line[:2]==['player','spawn'] and len(line)==3:
+            tospawn=int(line[2])
+            cherrypy.session['name']=self.players[tospawn]['name']
+            return 'Target Spawned to Your Session'
+        elif line[:2]==['set','count'] and len(line)==3:
+            self.wordCount=int(line[2])
+            return 'Count is Set'
+        elif line[:2]==['set','word']:
+            self.current=' '.join(line[2:])
+            return 'Word is Set'
+        elif line[:2]==['set','pos'] and len(line)==3:
+            self.activeNum=int(line[2])
+            return 'Position is Set'
+        else:
+            return 'Error: Bad Command'
+
+
+
 
 cherrypy.quickstart(Cer(),'/',{
     'global': {
@@ -258,4 +336,15 @@ cherrypy.quickstart(Cer(),'/',{
         'tools.sessions.on':True,
         #'tools.sessions.locking':'explicit',
     },
+    '/static': {
+        'tools.staticdir.on': True,
+        'tools.staticdir.dir': os.path.join(os.path.dirname(os.path.realpath(__file__)),'static'),
+        'tools.expires.on': True,
+        'tools.expires.secs': 600,
+    },
+    '/cardinal': {
+        'tools.auth_basic.on':True,
+        'tools.auth_basic.realm':'Cardinal',
+        'tools.auth_basic.checkpassword': lambda _,u,p: u=='heathcliff' and p=='aincrad',
+    }
 })
