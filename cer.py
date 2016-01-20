@@ -48,6 +48,7 @@ class Cer:
         self.current=config.init()
         self.activeNum=0
         self.wordCount=1
+        self.cardinal_paused=False
 
     def _stop_game(self):
         self.playing=False
@@ -69,7 +70,7 @@ class Cer:
                 if numnow!=self.activeNum or self.cardinal_paused:
                     break
             else:
-                if self.players[numnow] is not None:
+                if self.players[numnow]['live'] is not None:
                     self.players[numnow]['live']-=1
                     if self.players[numnow]['live']<0:
                         self.players[numnow]['live']=None
@@ -86,7 +87,7 @@ class Cer:
 
     def _skip_turn(self,player):
         qipa='内部错误: 配置文件没有返回正确的结果'
-        if self.players[self.activeNum]['name']!=player:
+        if self.players[player]['name']!=cherrypy.session['name']:
             return '错误: 不是你的回合'
         if self.players[player]['live']<=3:
             return '错误: 生命不足'
@@ -155,6 +156,9 @@ class Cer:
                 self.waiting_list[name]={'name':name,'time':time.time(),'okay':status=='okay'}
                 cherrypy.session['gnumber']=self.game_number
                 cherrypy.session['name']=name
+                return json.dumps({
+                    'plist':list(self.waiting_list.values())
+                })
             else:
                 if not (auth(self.game_number) and cherrypy.session['name']==name):
                     return json.dumps({
@@ -192,7 +196,6 @@ class Cer:
             self._refresh_waiting_list()
             if [a['name'] for a in self.waiting_list.values() if a['okay']]!=before:
                 return '有人掉线'
-            self.cardinal_paused=False
             self._start_game(before)
             return '[okay]'
 
@@ -235,6 +238,10 @@ class Cer:
             return json.dumps({
                 'error':'您被封禁了，请节哀顺变'
             })
+        if self.players[self.activeNum]['live'] is None:
+            return json.dumps({
+                'error':'你挂了'
+            })
         if not word:
             errcode=self._skip_turn(self.activeNum)
             if errcode:
@@ -275,6 +282,14 @@ class Cer:
                 return 'Game Stopped'
             else:
                 return 'Error: Not Playing'
+        elif line==['game','start']:
+            if self.playing:
+                return 'Error: Already Playing'
+            elif not self.waiting_list:
+                return 'Error: No Players'
+            else:
+                self._start_game([x['name'] for x in self.waiting_list.values()])
+                return 'Game Started'
         elif line[:2]==['ban','name']:
             toban=' '.join(line[2:])
             if toban in self.cardinal_banname:
@@ -339,6 +354,9 @@ cherrypy.quickstart(Cer(),'/',{
     '/static': {
         'tools.staticdir.on': True,
         'tools.staticdir.dir': os.path.join(os.path.dirname(os.path.realpath(__file__)),'static'),
+        'tools.staticdir.content_types': {
+            'css': 'text/css',
+        },
         'tools.expires.on': True,
         'tools.expires.secs': 600,
     },

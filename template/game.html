@@ -15,6 +15,10 @@
     <![endif]-->
     <title>Cer</title>
     <style>
+        @font-face {
+            font-family: SAO;
+            src: url(/static/sao_ui.otf);
+        }
         body {
             transition: background-color .25s;
         }
@@ -34,13 +38,17 @@
             display:none;
         }
         #textin {
-            font-size: large;
+            font-size: x-large;
+        }
+        #current, #textin {
+            font-family: SAO, Consolas, monospace !important;
+            letter-spacing: 1px;
         }
     </style>
     <script>
         nowStatus="";
         %if username:
-            yourName=atob("${base64.b64encode(username.encode()).decode()}");
+            yourName=decodeURIComponent(escape(window.atob("${base64.b64encode(username.encode()).decode()}")));
         %else:
             yourName="";
         %endif
@@ -58,6 +66,10 @@
             setTimeout(function(){error_div.addClass("fade");},500);
         }
         function waitForChange() {
+            function encod(x) {
+                return btoa(unescape(encodeURIComponent(x))).replace(/=/g,'_');
+            }
+        
             var xhr=new XMLHttpRequest();
             xhr.open("post","/wait_status",true);
             xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded;");
@@ -85,17 +97,18 @@
                 current.text(response["current"]);
                 counter.text(response["count"]);
                 for(var pos=0;pos<response["players"].length;pos++) {
+                    var encoded=encod(response["players"][pos]["name"]);
                     if(response["players"][pos]["live"]!==null)
-                        $("#live-"+btoa(response["players"][pos]["name"]).replace(/=/g,'_')).css("width",
+                        $("#live-"+encoded).css("width",
                             response["players"][pos]["live"]*100/maxLive+"%");
-                    else if($("#diebar-"+btoa(response["players"][pos]["name"]).replace(/=/g,'_')).hasClass("hidden")) {
-                        $("#diebar-"+btoa(response["players"][pos]["name"]).replace(/=/g,'_')).removeClass("hidden");
-                        $("#livebar-"+btoa(response["players"][pos]["name"]).replace(/=/g,'_')).addClass("hidden");
-                        $("#die-"+btoa(response["players"][pos]["name"]).replace(/=/g,'_')).text("享年 "+response["count"]+" 回合");
+                    else if($("#diebar-"+encoded).hasClass("hidden")) {
+                        $("#diebar-"+encoded).removeClass("hidden");
+                        $("#livebar-"+encoded).addClass("hidden");
+                        $("#die-"+encoded).text("享年 "+response["count"]+" 回合");
                     }
                 }
                 persons.removeClass();
-                $("#person-"+btoa(response["turn"]).replace(/=/g,'_')).addClass("info");
+                $("#person-"+encod(response["turn"])).addClass("info");
                 if(response["turn"]==yourName) {
                     textin.removeAttr("disabled");
                     textin.focus();
