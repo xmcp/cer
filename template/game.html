@@ -16,6 +16,9 @@
             font-family: SAO;
             src: url(/static/sao_ui.otf);
         }
+        a {
+            color: white !important;
+        }
         body {
             width: 100%; height: 100%; margin: 0;
             background-color: #024; color: white;
@@ -34,7 +37,6 @@
         }
         #player-table, #dialog {
             position: absolute; display: inline-block;
-            white-space: nowrap;
         }
         #player-table {
             right: calc(50% + 25px);
@@ -140,6 +142,12 @@
             border-width: 5px 5px 0; border-color: #000 transparent transparent transparent; border-style: solid;
             width: 0; height: 0;
             content: "";
+        }
+        #footnote {
+            position: absolute; bottom: 0;
+            padding: 10px;
+            width: calc(100% - 20px);
+            font-size: small;
         }
     </style>
     <script>
@@ -299,5 +307,9 @@
         <div id="tooltip" class="fade"></div>
     </div>
 
+    <div id="footnote">
+        <span style="float: right">Cer by <a href="https://github.com/xmcp" target="_blank">@xmcp</a></span>
+        当前正在使用 <b>${desc|h}</b>
+    
 </div></body>
 </html>
