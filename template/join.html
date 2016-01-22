@@ -3,40 +3,130 @@
 <head lang="zh">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <link href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-    <script src="/static/bootstrap/js/jquery-1.11.3.min.js"></script>
-    <script src="/static/bootstrap/js/bootstrap.min.js"></script>
+    <script src="/static/jquery-1.11.3.min.js"></script>
     <!--[if lt IE 9]>
         <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
         <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
     <title>加入 Cer</title>
     <style>
-        .full {
-            width: 100%;
+        @font-face {
+            font-family: SAO;
+            src: url(/static/sao_ui.otf);
         }
-        .player {
-            margin: 5px;
+        .yahei {
+            font-family: '微软雅黑', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        .sao-font {
+            font-family: SAO, Consolas, monospace; letter-spacing: 1px;
+            margin-left: 10px;
+        }
+        body {
+            width: 100%; height: 100%; margin: 0;
+             background: url(/static/bg/aincrad.jpg) fixed no-repeat center; background-size: cover;
+            transition: background-color .25s;
+        }
+        #panel {
+            position: absolute; right: calc(50% + 50px);
+            background: url(/static/sao/panel.png) no-repeat 100% 100%;;
+            width: 270px; height: 429px;
+            display: inline-block;
+        }
+        #panel-title {
+            position: absolute; top: 12px;
+            margin: 0;
+            width: 252px;
+            text-align: center;
+            font-size: x-large;
+        }
+        #panel-action {
+            position: absolute; top: 65px;
+            width: 230px;
+            padding: 10px;
+        }
+        #nickname {
+            display: block;
+            width: calc(100% - 45px);
+            padding-left: 1em;
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+        #panel-action>button {
+            display: block;
+            background: url(/static/sao/join_btn.png) no-repeat 35px 50%; background-size: contain;
+            width: 100%; height: 32px; margin-top: 10px;
+            line-height: 22px; font-size: 22px;
+            text-align: left; padding-left: 80px;
+            border: 0;
+        }
+        #panel-action>button:hover {
+            background-image: url(/static/sao/join_btn_hover.png);
+        }
+        #panel-action>button:disabled {
+            background-image: url(/static/sao/join_btn_disabled.png);
+        }
+        #panel-info {
+            position: absolute; top: 300px;
+            width: 230px;
+            padding-left: 20px;
+        }
+        #before-desc {
+            color: rgba(0,0,0,.5);
+            margin-bottom: 5px;
+        }
+        #desc {
             font-size: large;
         }
-        #plist:empty:before {
-            content: "没有玩家加入";
+        #powered-by {
+            position: absolute; bottom: 20px; right: 40px;
+            width: 100%; text-align: right;
+            color: rgba(0,0,0,.5);
+            font-size: small;
         }
-        #backgrounder {
-            position:absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            opacity: 0;
+        #plist {
+            position: absolute;
+            display: inline-block;
+            left:calc(50% - 50px);
+        }
+        .player {
+            background: url(/static/sao/player_card.png) no-repeat; background-clip: border-box; background-size: 100% 46px;
+            min-width: 250px; height: 46px;
+        }
+        .player-name {
+            line-height: 46px;
+            font-size: x-large;
+            padding: 0 10px 0 10px; margin: 0;
+        }
+        .ready {
+            background-image: url(/static/sao/player_card_ready.png) !important;
+            color: white !important;
+        }
+        #tooltip {
+            position: absolute; top: 40px; left: 15px; padding: 3px 8px;
+            color: #fff; background-color: #000;
+            text-align: center; white-space: nowrap; font-size: large;
+            border-radius: 4px;
+            width: 200px;
         }
         .fade {
             opacity: 0;
             transition: opacity 1s;
         }
-        body {
-            transition: background-color .25s;
+        #tooltip:after {
+            position: absolute; bottom: -5px; left: 50%;
+            margin-left: -5px;
+            border-width: 5px 5px 0; border-color: #000 transparent transparent transparent; border-style: solid;
+            width: 0; height: 0;
+            content: "";
         }
     </style>
     <script>
+        function resize_event() {
+            var panel=$("#panel");
+            panel.css("top",($(window).height()-panel.height())/2);
+            var plist=$("#plist");
+            plist.css("top",($(window).height()-plist.height())/2);
+        }
         status="idle";
         document.addEventListener('DOMContentLoaded',function(){
             window.join_btn=$("#join_btn");
@@ -44,14 +134,15 @@
             window.start_btn=$("#start_btn");
             window.plist=$("#plist");
             window.nickname=$("#nickname");
-            window.error_div=$("#error_div");
+            window.tooltip=$("#tooltip");
+            resize_event();
+            $(window).on("resize",resize_event);
             setInterval(refresh,1500);
             refresh();
         });
-        function msg(s) {
-            error_div.text(s);
-            error_div.removeClass("fade");
-            setTimeout(function(){error_div.addClass("fade");},500);
+        function msg(s) { //todo
+            tooltip.text(s).removeClass("fade");
+            setTimeout(function(){tooltip.addClass("fade");},500);
         }
         function refresh(){
             var xhr=new XMLHttpRequest();
@@ -61,7 +152,7 @@
                 if(this.readyState!=4)
                     return;
                 if(this.status!=200) {
-                    msg("在刷新列表时发生了错误 "+this.status);
+                    msg("加载时发生错误 "+this.status);
                     return;
                 }
                 var response=JSON.parse(this.responseText);
@@ -76,11 +167,14 @@
                     var pdata=response["plist"];
                 plist.html("");
                 for(var pos=0;pos<pdata.length;pos++) {
-                    var tmp=document.createElement("span");
-                    tmp.className="player label label-"+(pdata[pos]["okay"]?"success":"default");
-                    tmp.textContent=pdata[pos]["name"];
+                    var tmp=document.createElement("div"),sub=document.createElement("span");
+                    sub.className="sao-font player-name";
+                    sub.textContent=pdata[pos]["name"];
+                    tmp.className=pdata[pos]["okay"]?"player ready":"player";
+                    tmp.appendChild(sub);
                     plist.append(tmp);
                 }
+                resize_event();
             };
             xhr.send(
                 "status="+status+"&"+
@@ -90,13 +184,16 @@
         function join() {
             if(status!="idle") {
                 join_btn.text("加入");
-                status="idle";
+                window.status="idle";
                 okay_btn.attr('disabled','disabled');
                 nickname.removeAttr("disabled");
             }
             else {
+                if(!nickname.val()) {
+                    return msg("请输入昵称");
+                }
                 join_btn.text("取消加入");
-                status="join";
+                window.status="join";
                 okay_btn.removeAttr("disabled");
                 nickname.attr("disabled","disabled");
             }
@@ -105,15 +202,15 @@
         function okay() {
             if(status!="okay") {
                 okay_btn.text("取消准备");
-                status="okay";
+                window.status="okay";
                 join_btn.attr("disabled","disabled");
                 start_btn.removeAttr("disabled");
-                $("body").css("background-color","#dfd")
-                msg("离开此页面会自动取消准备")
+                $("body").css("background-color","#dfd");
+                msg("准备时请不要离开")
             }
             else {
                 okay_btn.text("准备");
-                status="join";
+                window.status="join";
                 join_btn.removeAttr("disabled");
                 start_btn.attr("disabled","disabled");
                 $("body").css("background-color","#fff")
@@ -128,7 +225,7 @@
                 if(this.readyState!=4)
                     return;
                 if(this.status!=200) {
-                    msg("在开始游戏时发生了错误 "+this.status);
+                    msg("开始时发生错误 "+this.status);
                     return;
                 }
                 if(this.responseText=="[okay]")
@@ -146,29 +243,21 @@
     </script>
 </head>
 <body onblur="_unjoin()"><div class="container">
-    <br />
-    <div class="well well-lg"><div class="row">
-        <div class="col-xs-6">
-            <input placeholder="昵称" class="form-control" style="display: inline !important;" id="nickname">
+    <div id="panel">
+        <p id="panel-title" class="sao-font">Join</p>
+        <div id="tooltip" class="yahei fade"></div>
+        <div id="panel-action">
+            <input id="nickname" class="sao-font" placeholder="Kirito" maxlength="15">
+            <button id="join_btn" type="button" class="yahei" onclick="join()">加入</button>
+            <button id="okay_btn" type="button" class="yahei" onclick="okay()" disabled="disabled">准备</button>
+            <button id="start_btn" type="button" class="yahei" onclick="start()" disabled="disabled">开始</button>
         </div>
-        <div class="col-xs-2">
-            <button type="button" class="btn btn-primary full" id="join_btn" onclick="join()">加入</button>
+        <div id="panel-info">
+            <div id="before-desc" class="yahei">当前正在使用</div>
+            <div id="desc" class="yahei">${desc|h}</div>
         </div>
-        <div class="col-xs-2">
-            <button type="button" class="btn btn-success full" id="okay_btn" onclick="okay()" disabled="disabled">准备</button>
-        </div>
-        <div class="col-xs-2">
-            <button type="button" class="btn btn-danger full" id="start_btn" onclick="start()" disabled="disabled">开始</button>
-        </div>
-    </div></div>
-    <div class="alert alert-danger fade" id="error_div">……</div>
-    <div class="panel panel-primary">
-        <div class="panel-heading">已加入玩家</div>
-        <div class="panel-body" id="plist"></div>
-        <div class="panel-footer">
-            <span>当前正在使用 <b>${desc|h}</b></span>
-            <small class="pull-right">Cer by <a href="https://github.com/xmcp" target="_blank">@xmcp</a></small>
-        </div>
-    </div>    
+        <span id="powered-by">Cer by <a href="https://github.com/xmcp" target="_blank">@xmcp</a></span>
+    </div>
+    <div id="plist"></div>
 </div></body>
 </html>

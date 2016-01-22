@@ -30,6 +30,7 @@ def auth(gnumber):
 
 class Cer:
     start_lock=threading.Lock()
+    waiter_lock=threading.Lock()
     playing=False
     game_number=time.time()%100000
     waiting_list={}
@@ -81,9 +82,10 @@ class Cer:
 
     def _refresh_waiting_list(self):
         time_limit=time.time()-3
-        for name in tuple(self.waiting_list):
-            if self.waiting_list[name]['time']<time_limit:
-                del self.waiting_list[name]
+        with self.waiter_lock:
+            for name in tuple(self.waiting_list):
+                if self.waiting_list[name]['time']<time_limit:
+                    del self.waiting_list[name]
 
     def _skip_turn(self,player):
         qipa='内部错误: 配置文件没有返回正确的结果'
@@ -148,28 +150,29 @@ class Cer:
                 return json.dumps({
                     'error':'请输入昵称'
                 })
-            if name not in self.waiting_list:
-                if len(self.waiting_list)>8:
+            with self.waiter_lock:
+                if name not in self.waiting_list:
+                    if len(self.waiting_list)>8:
+                        return json.dumps({
+                            'error':'人数已满'
+                        })
+                    self.waiting_list[name]={'name':name,'time':time.time(),'okay':status=='okay'}
+                    cherrypy.session['gnumber']=self.game_number
+                    cherrypy.session['name']=name
                     return json.dumps({
-                        'error':'人数已满'
+                        'plist':list(self.waiting_list.values())
                     })
-                self.waiting_list[name]={'name':name,'time':time.time(),'okay':status=='okay'}
-                cherrypy.session['gnumber']=self.game_number
-                cherrypy.session['name']=name
-                return json.dumps({
-                    'plist':list(self.waiting_list.values())
-                })
-            else:
-                if not (auth(self.game_number) and cherrypy.session['name']==name):
+                else:
+                    if not (auth(self.game_number) and cherrypy.session['name']==name):
+                        return json.dumps({
+                            'error':'昵称已经存在'
+                        })
+                    tmp=self.waiting_list[name]
+                    tmp['time']=time.time()
+                    tmp['okay']=status=='okay'
                     return json.dumps({
-                        'error':'昵称已经存在'
+                        'plist':list(self.waiting_list.values())
                     })
-                tmp=self.waiting_list[name]
-                tmp['time']=time.time()
-                tmp['okay']=status=='okay'
-                return json.dumps({
-                    'plist':list(self.waiting_list.values())
-                })
         else:
             if 'name' in cherrypy.session:
                 del cherrypy.session['name']
@@ -186,7 +189,7 @@ class Cer:
                 return '[okay]'
             for a in self.waiting_list.values():
                 if not a['okay']:
-                    return '没有完全准备好'
+                    return '有人没有准备好'
                 else:
                     before.append(a['name'])
             if len(before)<=1:

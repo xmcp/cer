@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head lang="zh">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/static/bootstrap/js/jquery-1.11.3.min.js"></script>
+    <script src="/static/bootstrap/js/bootstrap.min.js"></script>
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    <title>加入 Cer</title>
+    <style>
+        .full {
+            width: 100%;
+        }
+        .player {
+            margin: 5px;
+            font-size: large;
+        }
+        #plist:empty:before {
+            content: "没有玩家加入";
+        }
+        #backgrounder {
+            position:absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            opacity: 0;
+        }
+        .fade {
+            opacity: 0;
+            transition: opacity 1s;
+        }
+        body {
+            transition: background-color .25s;
+        }
+    </style>
+    <script>
+        status="idle";
+        document.addEventListener('DOMContentLoaded',function(){
+            window.join_btn=$("#join_btn");
+            window.okay_btn=$("#okay_btn");
+            window.start_btn=$("#start_btn");
+            window.plist=$("#plist");
+            window.nickname=$("#nickname");
+            window.error_div=$("#error_div");
+            setInterval(refresh,1500);
+            refresh();
+        });
+        function msg(s) {
+            error_div.text(s);
+            error_div.removeClass("fade");
+            setTimeout(function(){error_div.addClass("fade");},500);
+        }
+        function refresh(){
+            var xhr=new XMLHttpRequest();
+            xhr.open("post","/ping");
+            xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded;");
+            xhr.onreadystatechange=function() {
+                if(this.readyState!=4)
+                    return;
+                if(this.status!=200) {
+                    msg("在刷新列表时发生了错误 "+this.status);
+                    return;
+                }
+                var response=JSON.parse(this.responseText);
+                if(response["error"]) {
+                    if(response["error"]=="[start]")
+                        window.location.assign("/game");
+                    else
+                        msg(response["error"]);
+                    return;
+                }
+                else
+                    var pdata=response["plist"];
+                plist.html("");
+                for(var pos=0;pos<pdata.length;pos++) {
+                    var tmp=document.createElement("span");
+                    tmp.className="player label label-"+(pdata[pos]["okay"]?"success":"default");
+                    tmp.textContent=pdata[pos]["name"];
+                    plist.append(tmp);
+                }
+            };
+            xhr.send(
+                "status="+status+"&"+
+                "name="+encodeURIComponent(nickname.val())
+            );
+        }
+        function join() {
+            if(status!="idle") {
+                join_btn.text("加入");
+                status="idle";
+                okay_btn.attr('disabled','disabled');
+                nickname.removeAttr("disabled");
+            }
+            else {
+                join_btn.text("取消加入");
+                status="join";
+                okay_btn.removeAttr("disabled");
+                nickname.attr("disabled","disabled");
+            }
+            refresh();
+        }
+        function okay() {
+            if(status!="okay") {
+                okay_btn.text("取消准备");
+                status="okay";
+                join_btn.attr("disabled","disabled");
+                start_btn.removeAttr("disabled");
+                $("body").css("background-color","#dfd")
+                msg("离开此页面会自动取消准备")
+            }
+            else {
+                okay_btn.text("准备");
+                status="join";
+                join_btn.removeAttr("disabled");
+                start_btn.attr("disabled","disabled");
+                $("body").css("background-color","#fff")
+            }
+            refresh();
+        }
+        function start() {
+            var xhr=new XMLHttpRequest();
+            xhr.open("post","/start",true);
+            xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded;");
+            xhr.onreadystatechange=function() {
+                if(this.readyState!=4)
+                    return;
+                if(this.status!=200) {
+                    msg("在开始游戏时发生了错误 "+this.status);
+                    return;
+                }
+                if(this.responseText=="[okay]")
+                    window.location.assign("/game");
+                else
+                    msg(this.responseText);
+            };
+            msg("请稍候……");
+            xhr.send();
+        }
+        function _unjoin() {
+            if(status=="okay")
+                okay();
+        }
+    </script>
+</head>
+<body onblur="_unjoin()"><div class="container">
+    <br />
+    <div class="well well-lg"><div class="row">
+        <div class="col-xs-6">
+            <input placeholder="昵称" class="form-control" style="display: inline !important;" id="nickname">
+        </div>
+        <div class="col-xs-2">
+            <button type="button" class="btn btn-primary full" id="join_btn" onclick="join()">加入</button>
+        </div>
+        <div class="col-xs-2">
+            <button type="button" class="btn btn-success full" id="okay_btn" onclick="okay()" disabled="disabled">准备</button>
+        </div>
+        <div class="col-xs-2">
+            <button type="button" class="btn btn-danger full" id="start_btn" onclick="start()" disabled="disabled">开始</button>
+        </div>
+    </div></div>
+    <div class="alert alert-danger fade" id="error_div">……</div>
+    <div class="panel panel-primary">
+        <div class="panel-heading">已加入玩家</div>
+        <div class="panel-body" id="plist"></div>
+        <div class="panel-footer">
+            <span>当前正在使用 <b>${desc|h}</b></span>
+            <small class="pull-right">Cer by <a href="https://github.com/xmcp" target="_blank">@xmcp</a></small>
+        </div>
+    </div>    
+</div></body>
+</html>
