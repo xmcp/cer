@@ -2,50 +2,153 @@
 <%!
   import base64
 %>
-<html>
-<head lang="zh">
+<html lang="zh">
+<head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <link href="/static/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+    <title>Cer</title>
     <script src="/static/bootstrap/js/jquery-1.11.3.min.js"></script>
-    <script src="/static/bootstrap/js/bootstrap.min.js"></script>
     <!--[if lt IE 9]>
         <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
         <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
     <![endif]-->
-    <title>Cer</title>
     <style>
         @font-face {
             font-family: SAO;
             src: url(/static/sao_ui.otf);
         }
         body {
+            width: 100%; height: 100%; margin: 0;
+            background-color: #024; color: white;
             transition: background-color .25s;
         }
-        table.score_table,
-        table.score_table>tbody,
-        table.score_table>tbody>tr {
-            width: 100%;
-        }
-        .fix_progress {
-            margin-bottom: 0;
+        .hidden {
+            display: none !important;
         }
         .fade {
             opacity: 0;
             transition: opacity 1s;
         }
-        .hidden {
-            display:none;
+        #container {
+            top: 0; bottom: 0;  left: 0; right: 0;
+            position: absolute; margin: auto; overflow-y: auto;
+        }
+        #player-table, #dialog {
+            position: absolute; display: inline-block;
+            white-space: nowrap;
+        }
+        #player-table {
+            right: calc(50% + 25px);
+        }
+        #dialog {
+            left: calc(50% + 25px);
+        }
+        .player-row {
+            height: 37px; margin: 5px 0 5px 0;
+        }
+        .left-addon {
+            width: 33px; margin-right: 3px;
+            background: url(/static/sao/left_addon.png) no-repeat center right;
+        }
+        .left-addon>img {
+            margin: 5px 0 0 5px;
+        }
+        .main-player-bar {
+            height: 33px;
+            background: url(/static/sao/main_bg.png) no-repeat 0 3px; background-size: 100% 33px;
+        }
+        .player-name, #dialog-title, #dialog-body, #textin {
+            font-family: SAO, Consolas, monospace; letter-spacing: 2px;
+            margin-left: 10px; font-size: 20px;
+            text-shadow: 0 0 3px black;
         }
         #textin {
-            font-size: x-large;
+            text-shadow: none !important;
         }
-        #current, #textin {
-            font-family: SAO, Consolas, monospace !important;
-            letter-spacing: 1px;
+        .life-bar {
+            display: inline-block; float: right;
+            margin: 5px 0 0 8px;
+            background: url(/static/sao/lifebar_bg.png) no-repeat 100% 100%;
+            width: 250px; height: 14px;
+        }
+        .life-bar>div {
+            position: relative; display: inline-block;
+            width: 100%; height: 100%;
+            background: url(/static/sao/sp_green.png) no-repeat 100% 100%;
+            top: -2px;
+        }
+        .right-addon {
+            min-width: 34px; height: 39px; padding: 0 0 0 2px;
+        }
+        .right-addon>div {
+            display: inline-block;
+        }
+        .ex {
+            margin: 2px 0 -2px 0;
+            background: url(/static/sao/ex.png) no-repeat 100% 100%;
+            width: 37px; height: 33px;
+        }
+        .dead {
+            margin: 2px 0 -2px 0;
+            background: url(/static/sao/dead.png) no-repeat 100% 100%;
+            width: 37px; height: 33px;
+        }
+        #dialog {
+            background: url(/static/sao/dialog.png) no-repeat 100% 100%;
+            width: 350px; height: 253px;
+        }
+        #dialog-title {
+            position: relative;
+            top: 22px; text-align: center;
+            margin: 0;
+            font-size: xx-large;
+        }
+        #dialog-body {
+            position: relative;
+            top:60px; text-align: center;
+            margin: 0;
+            font-size: xx-large;
+        }
+        #textin {
+            position: relative;
+            top: 97px; left: 20px;
+            width: 215px;
+            padding-left: 1em;
+        }
+        #submit-btn {
+            position: relative;
+            top: 107px; right: -30px;
+            background: url(/static/sao/ok_btn.png) no-repeat 100% 100%;
+            width: 40px; height: 40px;
+            border: 0;
+        }
+        #submit-btn:hover {
+            background-image: url(/static/sao/ok_btn_hover.png);
+        }
+        #submit-btn:disabled {
+            background-image: url(/static/sao/ok_btn_disabled.png);
+        }
+        #tooltip {
+            position: relative; top: 30px; left: 30px; padding: 3px 8px;
+            color: #fff; background-color: #000;
+            text-align: center; white-space: nowrap; font-size: large;
+            border-radius: 4px;
+            width: 200px;
+        }
+        #tooltip:after {
+            position: absolute; bottom: -5px; left: 50%;
+            margin-left: -5px;
+            border-width: 5px 5px 0; border-color: #000 transparent transparent transparent; border-style: solid;
+            width: 0; height: 0;
+            content: "";
         }
     </style>
     <script>
+        function resize_event() {
+            var table=$("#player-table");
+            table.css("top",($(window).height()-table.height())/2);
+            var dialog=$("#dialog");
+            dialog.css("top",($(window).height()-dialog.height())/2);
+        }
         nowStatus="";
         %if username:
             yourName=decodeURIComponent(escape(window.atob("${base64.b64encode(username.encode()).decode()}")));
@@ -53,23 +156,28 @@
             yourName="";
         %endif
         maxLive="${MAXLIVE}";
-        document.addEventListener('DOMContentLoaded',function(){
+        $(document).ready(function(){
             window.current=$("#current");
             window.counter=$("#counter");
             window.textin=$("#textin");
-            window.error_div=$("#error_div");
+            window.submitter=$("#submit-btn");
+            window.tooltip=$("#tooltip");
             window.persons=$("[name=js-person]");
+            resize_event();
+            $(window).on("resize",resize_event);
+            $("[id^=live-]").css("background-position","0px");
             waitForChange();
         });
         function msg(s) {
-            error_div.text(s).removeClass("fade");
-            setTimeout(function(){error_div.addClass("fade");},500);
+            console.log(s);
+            tooltip.text(s).removeClass("fade");
+            setTimeout(function(){tooltip.addClass("fade");},750);
         }
         function waitForChange() {
             function encod(x) {
                 return btoa(unescape(encodeURIComponent(x))).replace(/=/g,'_');
             }
-        
+
             var xhr=new XMLHttpRequest();
             xhr.open("post","/wait_status",true);
             xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded;");
@@ -87,7 +195,7 @@
                     if(response["error"]==="[STOP]") {
                         msg("游戏结束");
                         setTimeout(function(){window.location.assign("/")},2000);
-                        textin.setAttribute("disabled","disabled");
+                        textin.setAttr("disabled","disabled");
                         return;
                     }
                     msg(response["error"]);
@@ -99,24 +207,26 @@
                 for(var pos=0;pos<response["players"].length;pos++) {
                     var encoded=encod(response["players"][pos]["name"]);
                     if(response["players"][pos]["live"]!==null)
-                        $("#live-"+encoded).css("width",
-                            response["players"][pos]["live"]*100/maxLive+"%");
+                        $("#live-"+encoded).animate({
+                            backgroundPosition: (response["players"][pos]["live"]-maxLive)*230/maxLive+"px"
+                        },250,"swing");
                     else if($("#diebar-"+encoded).hasClass("hidden")) {
                         $("#diebar-"+encoded).removeClass("hidden");
-                        $("#livebar-"+encoded).addClass("hidden");
-                        $("#die-"+encoded).text("享年 "+response["count"]+" 回合");
+                        $("#live-"+encoded).addClass("hidden");
                     }
                 }
-                persons.removeClass();
-                $("#person-"+encod(response["turn"])).addClass("info");
+                persons.removeClass("ex").addClass("hidden");
+                $("#person-"+encod(response["turn"])).addClass("ex").removeClass("hidden");
                 if(response["turn"]==yourName) {
                     textin.removeAttr("disabled");
+                    submitter.removeAttr("disabled");
+                    $("body").css("background-color","#400");
                     textin.focus();
-                    $("body").css("background-color","#ffc");
                 }
                 else {
                     textin.attr("disabled","disabled");
-                    $("body").css("background-color","#fff");
+                    submitter.attr("disabled","disabled");
+                    $("body").css("background-color","#024");
                 }
                 setTimeout(waitForChange,250);
             };
@@ -154,52 +264,40 @@
         }
     </script>
 </head>
-<body><div class="container">
-    <br />
-    <div class="well well-sm"><div class="row">
-        <div class="col-xs-5" style="font-size: x-large;">
-            <span id="counter" class="label label-default">0</span>&nbsp;
-            <span id="current">Loading</span>
-        </div>
-        <div class="col-xs-7">
-            <input class="form-control" id="textin" onkeypress="check_enter(event)" placeholder="">
-        </div>
-    </div></div>
-    <div class="alert alert-danger fade" id="error_div">……</div>
-    <table class="score_table table">
-        <thead>
-            <tr>
-                <th style="width: 50%">昵称</th>
-                <th style="width: 50%">生命 / ${MAXLIVE}</th>
+<body><div id="container">
+
+    <table id="player-table"><tbody>
+        % for person in players:
+            <% b64name=base64.b64encode(person['name'].encode()).decode().replace('=','_') %>
+            <tr class="player-row">
+                <td class="left-addon">
+                    % if username==person['name']:
+                        <img src="/static/sao/player.png">
+                    % endif
+                </td>
+                <td class="main-player-bar">
+                    <span class="player-name">${person['name']|h}</span>
+                    <div id="livebar-${b64name}" class="life-bar">
+                        <div  id="live-${b64name}"></div>
+                    </div>
+                </td>
+                <td class="right-addon">
+                    <div name="js-person" id="person-${b64name}" class="ex"></div>
+                    <div id="diebar-${b64name}" class="dead hidden"></div>
+                </td>
             </tr>
-        </thead>
-        <tbody>
-            % for person in players:
-                <% b64name=base64.b64encode(person['name'].encode()).decode().replace('=','_') %>
-                <tr name="js-person" id="person-${b64name}">
-                    <td>
-                        <b>${person['name']|h}</b>
-                        ${' &nbsp; <span class="glyphicon glyphicon-user"></span>' if username==person['name'] else ''}
-                    </td>
-                    <td>
-                        <div class="progress fix_progress ${'hidden' if person['live'] is None else ''}" id="livebar-${b64name}">
-                            <div id="live-${b64name}" class="progress-bar" style="width: ${(person['live'] or 0)/MAXLIVE*100}%;">
-                            </div>
-                        </div>
-                        <div class="progress fix_progress ${'' if person['live'] is None else 'hidden'}" id="diebar-${b64name}">
-                            <div id="die-${b64name}" class="progress-bar progress-bar-danger progress-bar-striped" style="width: 100%">
-                                R.I.P.
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            % endfor
-        </tbody>
-    </table>
-    <br /><br /><br />
-    <div class="well well-sm">
-        <span>当前正在使用 <b>${desc|h}</b></span>
-        <small class="pull-right">Cer by <a href="https://github.com/xmcp" target="_blank">@xmcp</a></small>
+        % endfor
+    </tbody></table>
+
+    <div id="dialog">
+        <p id="dialog-title">
+            turn <span id="counter">???</span>
+        </p>
+        <p id="dialog-body"><span id="current">loading...</span></p>
+        <input id="textin" placeholder="" onkeypress="check_enter(event)">
+        <button id="submit-btn" type="button" onclick="enter(textin.val())"></button>
+        <div id="tooltip" class="fade"></div>
     </div>
+
 </div></body>
 </html>

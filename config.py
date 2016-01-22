@@ -31,13 +31,13 @@ def validate(before,after):
     """
     after=after.strip()
     if after in history:
-        return '单词在历史记录中'
+        return '单词已经用过了'
     elif not after.isalpha():
         return '只能包含字母'
     elif before[-1]!=after[0]:
         return '首字母不符合要求'
     elif before[-1]!='x' and after not in words:
-        return '单词不在字典中'
+        return '单词不在词典中'
     history.add(after)
 
 def skip(before):

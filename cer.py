@@ -256,7 +256,7 @@ class Cer:
         msg=config.validate(self.current,word)
         if msg:
             return json.dumps({
-                'error':'不被允许: %s'%msg
+                'error':msg
             })
         self.current=word
         player=self.players[self.activeNum]
@@ -336,8 +336,6 @@ class Cer:
             return 'Position is Set'
         else:
             return 'Error: Bad Command'
-
-
 
 
 cherrypy.quickstart(Cer(),'/',{
