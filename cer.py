@@ -8,7 +8,7 @@ import time
 import threading
 import config
 
-server_path=os.path.split(sys.argv[0])[0]
+server_path=os.path.dirname(os.path.realpath(__file__))
 def post_only():
     if cherrypy.request.method.upper()!='POST':
         cherrypy.response.headers['Allow']='POST'
@@ -338,7 +338,7 @@ class Cer:
             return 'Error: Bad Command'
 
 
-cherrypy.quickstart(Cer(),'/',{
+conf={
     'global': {
         'engine.autoreload.on':False,
         'server.socket_host':'0.0.0.0',
@@ -363,4 +363,8 @@ cherrypy.quickstart(Cer(),'/',{
         'tools.auth_basic.realm':'Cardinal',
         'tools.auth_basic.checkpassword': lambda _,u,p: u=='heathcliff' and p=='aincrad',
     }
-})
+}
+if __name__=='__main__':
+    cherrypy.quickstart(Cer(),'/',conf)
+else:
+    wsgi_app=cherrypy.Application(Cer(),'/',conf)
