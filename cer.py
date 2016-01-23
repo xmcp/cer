@@ -152,7 +152,7 @@ class Cer:
                 })
             with self.waiter_lock:
                 if name not in self.waiting_list:
-                    if len(self.waiting_list)>8:
+                    if len(self.waiting_list)>=10:
                         return json.dumps({
                             'error':'人数已满'
                         })
@@ -225,9 +225,11 @@ class Cer:
 
     @cherrypy.expose()
     def wait_status(self,now):
+        count=0
         cherrypy.session.release_lock()
-        while now==self.game_status():
+        while now==self.game_status() and count<25:
             time.sleep(.2)
+            count+=1
         return self.game_status()
 
     @cherrypy.expose()
@@ -347,9 +349,11 @@ conf={
         'server.socket_host':'0.0.0.0',
         'server.socket_port':7654,
         'server.thread_pool':20,
+        'tools.response_headers.on':True,
     },
     '/': {
         'tools.sessions.on':True,
+        'tools.gzip.on':True,
         #'tools.sessions.locking':'explicit',
     },
     '/static': {
@@ -358,8 +362,9 @@ conf={
         'tools.staticdir.content_types': {
             'css': 'text/css',
         },
-        'tools.expires.on': True,
-        'tools.expires.secs': 600,
+        'tools.response_headers.headers': [
+            ('Cache-Control','max-age=3600'),
+        ],
     },
     '/cardinal': {
         'tools.auth_basic.on':True,

@@ -138,6 +138,7 @@
             resize_event();
             $(window).on("resize",resize_event);
             setInterval(refresh,1500);
+            setTimeout(preload_image,2500);
             refresh();
         });
         function msg(s) { //todo
@@ -239,6 +240,27 @@
         function _unjoin() {
             if(status=="okay")
                 okay();
+        }
+        function preload_image() {
+            (function(x) {
+                for(var pos=0;pos<x.length;pos++) {
+                    var tmp=new Image();
+                    tmp.src=x[pos];
+                }
+            })([
+                "/static/sao/dead.png",
+                "/static/sao/dialog.png",
+                "/static/sao/ex.png",
+                "/static/sao/dead.png",
+                "/static/sao/left_addon.png",
+                "/static/sao/lifebar_bg.png",
+                "/static/sao/main_bg.png",
+                "/static/sao/ok_btn.png",
+                "/static/sao/ok_btn_hover.png",
+                "/static/sao/ok_btn_disabled.png",
+                "/static/sao/player.png",
+                "/static/sao/sp_green.png"
+            ]);
         }
     </script>
 </head>

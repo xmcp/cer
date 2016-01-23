@@ -79,7 +79,6 @@
             position: relative; display: inline-block;
             width: 100%; height: 100%;
             background: url(/static/sao/sp_green.png) no-repeat 100% 100%;
-            top: -2px;
         }
         .right-addon {
             min-width: 34px; height: 39px; padding: 0 0 0 2px;
@@ -198,7 +197,7 @@
                 if(this.readyState!=4)
                     return;
                 if(this.status!=200) {
-                    msg("在获取状态时发生错误 "+this.status);
+                    msg("更新状态时发生错误 "+this.status);
                     setTimeout(waitForChange,1000);
                     return;
                 }
@@ -262,7 +261,7 @@
                 if(this.readyState!=4)
                     return;
                 if(this.status!=200) {
-                    msg("在提交文本时发生错误 "+this.status);
+                    msg("提交时发生错误 "+this.status);
                     return;
                 }
                 var response=JSON.parse(xhr.responseText);
