@@ -2,7 +2,7 @@
 <html>
 <head lang="zh">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=.5, maximum-scale=1, user-scalable=yes">
     <script src="/static/jquery-1.11.3.min.js"></script>
     <!--[if lt IE 9]>
         <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
@@ -30,7 +30,7 @@
             transition: background-color .25s;
         }
         #panel {
-            position: absolute; right: calc(50% + 50px);
+            position: absolute; right: 50%; margin-right: 50px;
             background: url(/static/sao/panel.png) no-repeat 100% 100%;;
             width: 270px; height: 429px;
             display: inline-block;
@@ -89,7 +89,7 @@
         #plist {
             position: absolute;
             display: inline-block;
-            left:calc(50% - 50px);
+            left:50%; margin-left: -50px;
         }
         .player {
             background: url(/static/sao/player_card.png) no-repeat; background-clip: border-box; background-size: 100% 46px;

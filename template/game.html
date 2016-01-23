@@ -5,6 +5,7 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=.5, maximum-scale=1, user-scalable=yes">
     <title>Cer</title>
     <script src="/static/jquery-1.11.3.min.js"></script>
     <!--[if lt IE 9]>
@@ -47,10 +48,10 @@
             position: absolute; display: inline-block;
         }
         #player-table {
-            right: calc(50% + 25px);
+            right: 50%; margin-right: 25px;
         }
         #dialog {
-            left: calc(50% + 25px);
+            left: 50%; margin-left: -25px;
         }
         .player-row {
             height: 37px; margin: 5px 0 5px 0;
@@ -306,7 +307,7 @@
             turn <span id="counter">???</span>
         </p>
         <p id="dialog-body" class="sao-font"><span id="current">loading...</span></p>
-        <input id="textin" placeholder="" class="sao-font" onkeypress="check_enter(event)">
+        <input id="textin" placeholder="" class="sao-font" onkeypress="check_enter(event)" autocorrect="off" autocapitalize="off">
         <button id="submit-btn" type="button" onclick="enter(textin.val())"></button>
         <div id="tooltip" class="fade yahei"></div>
     </div>
