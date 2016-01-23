@@ -21,6 +21,9 @@
             font-family: SAO, Consolas, monospace; letter-spacing: 1px;
             margin-left: 10px;
         }
+        a {
+            color: inherit !important;
+        }
         body {
             width: 100%; height: 100%; margin: 0;
              background: url(/static/bg/aincrad.jpg) fixed no-repeat center; background-size: cover;
@@ -118,6 +121,17 @@
             border-width: 5px 5px 0; border-color: #000 transparent transparent transparent; border-style: solid;
             width: 0; height: 0;
             content: "";
+        }
+        #cardinal-link {
+            position: absolute; top: 10px; right: 10px;
+            color: white; text-shadow: 0 0 3px black;
+        }
+        #cardinal-link a {
+            text-decoration: none;
+        }
+        #cardinal-link span {
+            font-size: 18px;
+            position: relative; top: -6px;
         }
     </style>
     <script>
@@ -281,5 +295,8 @@
         <span id="powered-by">Cer by <a href="https://github.com/xmcp" target="_blank">@xmcp</a></span>
     </div>
     <div id="plist"></div>
+    <div id="cardinal-link" class="sao-font"><a href="/cardinal" target="_blank">
+        <img src="/static/sao/cardinal.png"><span> Cardinal Powered</span>
+    </a></div>
 </div></body>
 </html>
