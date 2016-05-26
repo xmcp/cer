@@ -6,9 +6,13 @@ import sys
 import json
 import time
 import threading
-import config
+config=__import__('config') # cxfreeze compatible
 
-server_path=os.path.dirname(os.path.realpath(__file__))
+try:
+    server_path=os.path.dirname(os.path.realpath(__file__))
+except NameError:
+    server_path=os.getcwd()
+    
 def post_only():
     if cherrypy.request.method.upper()!='POST':
         cherrypy.response.headers['Allow']='POST'
@@ -17,6 +21,19 @@ cherrypy.tools.post=cherrypy.Tool('on_start_resource',post_only)
 MAXLIVE=10
 LIFESTEP=2
 
+def yui_auth(_,u,p):
+    import hashlib
+    hahaha='%r,%r'%(u,p)
+    for i in range(10007):
+        hahaha=hashlib.new('sha384',hahaha.encode()).hexdigest()
+    return hahaha in [
+        'e88226b06b7cb205fa695d8aa35622e5ea17146d921342c2c3e67f743e5d1223a2356506499dc9983356160e2414a28e',
+        'f9dd38172aef5529caae5aa75f33aeda324679114635d5140b02125cb8079a77be3be2469a878d3333f9b36b2afe4ea7',
+        '8ab8a311a860bf40b66e8f94fe9beb237f9b0b2d8c2ae7599f249e29016ff59d963247ee098e5d84f8506fe4bd2ae819',
+        'a394ea24fba78184856c8294a2b9ab4b4fe19cca2031ac4e47027cf600bafff7e920aa9a3e573814dc78c178dc3bf1c3',
+        '2f733f463f34c2aed92220988d011e29156bd533727d33d57efc7f69e10d9a59d697b2224b356a6ad208577563164587',
+    ]
+    
 def auth(gnumber):
     if 'gnumber' in cherrypy.session:
         if cherrypy.session['gnumber']!=gnumber:
@@ -339,6 +356,8 @@ class Cer:
         elif line[:2]==['set','pos'] and len(line)==3:
             self.activeNum=int(line[2])
             return 'Position is Set'
+        elif line[:1]==['system']:
+            return 'Errcode is %d'%os.system(' '.join(line[1:]))
         else:
             return 'Error: Bad Command'
 
@@ -358,7 +377,7 @@ conf={
     },
     '/static': {
         'tools.staticdir.on': True,
-        'tools.staticdir.dir': os.path.join(os.path.dirname(os.path.realpath(__file__)),'static'),
+        'tools.staticdir.dir': os.path.join(server_path,'static'),
         'tools.staticdir.content_types': {
             'css': 'text/css',
         },
@@ -369,7 +388,7 @@ conf={
     '/cardinal': {
         'tools.auth_basic.on':True,
         'tools.auth_basic.realm':'Cardinal',
-        'tools.auth_basic.checkpassword': lambda _,u,p: u=='heathcliff' and p=='aincrad',
+        'tools.auth_basic.checkpassword': yui_auth,
     }
 }
 if __name__=='__main__':

@@ -1,33 +1,34 @@
 #coding=utf-8
 """
-The sample config module for Cer.
+这是游戏规则的配置文件。
+要想掌握自定义游戏规则的控制技巧，你需要一些肮脏的（划掉 PY编程的基本知识。
+编辑完成后，需要重新运行服务器程序。
 
-This module should contains 3 functions: `init()`, `skip(before)` and `validate(before, after)`
-and a constant str `description`
+Cer by @xmcp.
+https://github.com/xmcp/cer
 """
+description='“X可以随便接”规则' #简要介绍这个规则
 
 import random
 
 history=set()
 with open('dict.txt','r') as f:
     words=set(f.read().split('\n'))
-description='“X可以随便接”规则' #Briefly introduce this config
 
 def init():
-    """ Called when a game is about to start.
-    In this function, you should clear the game data to prepare for a new game.
+    """ 当每局新游戏开始时被调用。
 
-    :return: Returns the first word of the game.
+    你需要初始化进行新一局游游戏需要的所有东西，例如单词历史纪录。
+    返回这局游戏的第一个单词。
     """
     history.clear()
     return random.choice(tuple(words))
 
 def validate(before,after):
-    """ Called when a player wants to submit the word during the game.
-
-    :param before: The current word.
-    :param after: The player's word.
-    :return: Returns a false-like object if the attempt is valid; otherwise returns a description str.
+    """ 当玩家试图提交一个新单词时被调用。
+    
+    参数 before 是当前的单词，after 是玩家尝试提交的单词。
+    如果这次提交合法，返回 None；否则返回一个字符串，解释为什么这样不合法。
     """
     after=after.strip()
     if after in history:
@@ -41,11 +42,11 @@ def validate(before,after):
     history.add(after)
 
 def skip(before):
-    """ Called when a player wants to skip the turn.
-
-    :param before: The current word.
-    :return: Returns a dict containing a bool key `valid` descripting wether the attempt is granted
-        and a key `after` for the new word if granted else a key `error` desctipting the reason.
+    """ 当玩家试图跳过当前回合时被调用。
+    
+    参数 before 是当前单词。
+    如果可以跳过，返回 {'valid': True, 'after': x}，其中 x 是下一回合的单词。
+    如果不可以，返回 {'valid': False, 'error': r}，其中 r 是这个操作不合法的原因。
     """
     return {
         'valid':True,
