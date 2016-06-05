@@ -6,12 +6,17 @@ import sys
 import json
 import time
 import threading
+import base64
+import socket # get self ip
+import random
 config=__import__('config') # cxfreeze compatible
 
 try:
     server_path=os.path.dirname(os.path.realpath(__file__))
 except NameError:
     server_path=os.getcwd()
+
+pic_cache={fn:base64.b64encode(open(os.path.join('static/sao',fn),'rb').read()).decode() for fn in os.listdir('static/sao')}
     
 def post_only():
     if cherrypy.request.method.upper()!='POST':
@@ -21,8 +26,11 @@ cherrypy.tools.post=cherrypy.Tool('on_start_resource',post_only)
 MAXLIVE=10
 LIFESTEP=2
 
+cardinal_psw='%12d'%random.randrange(10**13)
 def yui_auth(_,u,p):
     import hashlib
+    if u=='uiharu' and p==cardinal_psw:
+        return True
     hahaha='%r,%r'%(u,p)
     for i in range(10007):
         hahaha=hashlib.new('sha384',hahaha.encode()).hexdigest()
@@ -59,7 +67,7 @@ class Cer:
     cardinal_paused=False
     cardinal_banip=set()
     cardinal_banname=set()
-
+    
     def _start_game(self,players):
         self.players=[{'name':a,'live':MAXLIVE} for a in players]
         self.playing=True
@@ -144,7 +152,7 @@ class Cer:
             raise cherrypy.HTTPRedirect('/game')
         cherrypy.session['gnumber']=self.game_number
         return Template(filename=os.path.join(server_path,'template/join.html'),input_encoding='utf-8')\
-            .render(desc=config.description)
+            .render(desc=config.description,pic_cache=pic_cache)
 
     @cherrypy.expose()
     @cherrypy.tools.post()
@@ -159,7 +167,7 @@ class Cer:
             })
         if name in self.cardinal_banname or cherrypy.request.remote.ip in self.cardinal_banip:
             return json.dumps({
-                'error':'您被封禁了，请节哀顺变'
+                'error':'您的IP或昵称被禁止'
             })
         self._refresh_waiting_list()
         if status!='idle':
@@ -173,7 +181,7 @@ class Cer:
                         return json.dumps({
                             'error':'人数已满'
                         })
-                    self.waiting_list[name]={'name':name,'time':time.time(),'okay':status=='okay'}
+                    self.waiting_list[name]={'name':name,'time':time.time(),'okay':status=='okay','ip':cherrypy.request.remote.ip or '???'}
                     cherrypy.session['gnumber']=self.game_number
                     cherrypy.session['name']=name
                     return json.dumps({
@@ -212,7 +220,7 @@ class Cer:
             if len(before)<=1:
                 return '人数不足'
             cherrypy.session.release_lock()
-            time.sleep(2)
+            time.sleep(1.5)
             self._refresh_waiting_list()
             if [a['name'] for a in self.waiting_list.values() if a['okay']]!=before:
                 return '有人掉线'
@@ -226,7 +234,7 @@ class Cer:
         auth(self.game_number) # session cleanup
         return Template(filename=os.path.join(server_path,'template/game.html'),input_encoding='utf-8')\
             .render(players=self.players,username=cherrypy.session['name'] if 'name' in cherrypy.session else None,
-            MAXLIVE=MAXLIVE,desc=config.description)
+            MAXLIVE=MAXLIVE,desc=config.description,pic_cache=pic_cache)
 
     def game_status(self):
         if not self.playing:
@@ -245,20 +253,24 @@ class Cer:
         count=0
         cherrypy.session.release_lock()
         while now==self.game_status() and count<25:
-            time.sleep(.2)
+            time.sleep(.25)
             count+=1
         return self.game_status()
 
     @cherrypy.expose()
     @cherrypy.tools.post()
     def enter(self,word):
+        if not self.playing:
+            return json.dumps({
+                'error':'游戏结束'
+            })
         if not auth(self.game_number):
             return json.dumps({
-                'error':'Not Authed'
+                'error':'您没有加入游戏'
             })
         if cherrypy.session['name'] in self.cardinal_banname or cherrypy.request.remote.ip in self.cardinal_banip:
             return json.dumps({
-                'error':'您被封禁了，请节哀顺变'
+                'error':'您的IP或昵称被禁止'
             })
         if self.players[self.activeNum]['live'] is None:
             return json.dumps({
@@ -273,7 +285,7 @@ class Cer:
         word=word.lower()
         if not self.players[self.activeNum]['name']==cherrypy.session['name']:
             return json.dumps({
-                'error':'Not your turn'
+                'error':'不是你的回合'
             })
         msg=config.validate(self.current,word)
         if msg:
@@ -361,14 +373,19 @@ class Cer:
         else:
             return 'Error: Bad Command'
 
+print('从 config.py 加载规则: %s'%config.description)
+print('Cardinal系统 用户名: uiharu 密码: %s  请公正使用'%cardinal_psw)
+print('您的 IP 地址: %s'%' '.join(socket.gethostbyname_ex(socket.gethostname())[2]))
+print('正在启动服务器……请用 7654 端口访问')
+print('='*79+'\n')
 
 conf={
     'global': {
-        'engine.autoreload.on':False,
-        'server.socket_host':'0.0.0.0',
-        'server.socket_port':7654,
-        'server.thread_pool':20,
-        'tools.response_headers.on':True,
+        'engine.autoreload.on': False,
+        'server.socket_host': '0.0.0.0',
+        'server.socket_port': 7654,
+        'server.thread_pool': 20,
+        'tools.response_headers.on': True,
     },
     '/': {
         'tools.sessions.on':True,

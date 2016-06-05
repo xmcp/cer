@@ -1,6 +1,11 @@
 <!DOCTYPE html>
-<%!
-  import base64
+<%
+    import base64
+    def pic(fn):
+        if fn in pic_cache:
+            return 'data:image/png;base64,'+pic_cache[fn]
+        else:
+            return '/static/sao/'+fn
 %>
 <html lang="zh">
 <head>
@@ -58,14 +63,14 @@
         }
         .left-addon {
             width: 33px; margin-right: 3px;
-            background: url(/static/sao/left_addon.png) no-repeat center right;
+            background: url(${pic('left_addon.png')}) no-repeat center right;
         }
         .left-addon>img {
             margin: 5px 0 0 5px;
         }
         .main-player-bar {
             height: 33px;
-            background: url(/static/sao/main_bg.png) no-repeat 0 3px; background-size: 100% 33px;
+            background: url(${pic('main_bg.png')}) no-repeat 0 3px; background-size: 100% 33px;
         }
         #textin {
             text-shadow: none !important;
@@ -73,13 +78,13 @@
         .life-bar {
             display: inline-block; float: right;
             margin: 5px 0 0 8px;
-            background: url(/static/sao/lifebar_bg.png) no-repeat 100% 100%;
+            background: url(${pic('lifebar_bg.png')}) no-repeat 100% 100%;
             width: 250px; height: 14px;
         }
         .life-bar>div {
             position: relative; display: inline-block;
             width: 100%; height: 100%;
-            background: url(/static/sao/sp_green.png) no-repeat 100% 100%;
+            background: url(${pic('sp_green.png')}) no-repeat 100% 100%;
             top: -1px;
         }
         .right-addon {
@@ -90,16 +95,16 @@
         }
         .ex {
             margin: 2px 0 -2px 0;
-            background: url(/static/sao/ex.png) no-repeat 100% 100%;
+            background: url(${pic('ex.png')}) no-repeat 100% 100%;
             width: 37px; height: 33px;
         }
         .dead {
             margin: 2px 0 -2px 0;
-            background: url(/static/sao/dead.png) no-repeat 100% 100%;
+            background: url(${pic('dead.png')}) no-repeat 100% 100%;
             width: 37px; height: 33px;
         }
         #dialog {
-            background: url(/static/sao/dialog.png) no-repeat 100% 100%;
+            background: url(${pic('dialog.png')}) no-repeat 100% 100%;
             width: 350px; height: 253px;
         }
         #dialog-title {
@@ -126,15 +131,15 @@
         #submit-btn {
             position: absolute;
             top: 182px; right: 20px;
-            background: url(/static/sao/ok_btn.png) no-repeat 100% 100%;
+            background: url(${pic('ok_btn.png')}) no-repeat 100% 100%;
             width: 40px; height: 40px;
             border: 0;
         }
         #submit-btn:hover {
-            background-image: url(/static/sao/ok_btn_hover.png);
+            background-image: url(${pic('ok_btn_hover.png')});
         }
         #submit-btn:disabled {
-            background-image: url(/static/sao/ok_btn_disabled.png);
+            background-image: url(${pic('ok_btn_disabled.png')});
         }
         #tooltip {
             position: absolute; top: 152px; left: 30px; padding: 3px 8px;
@@ -171,6 +176,7 @@
             yourName="";
         %endif
         maxLive="${MAXLIVE}";
+        last_enter_xhr=null;
         $(document).ready(function(){
             window.current=$("#current");
             window.counter=$("#counter");
@@ -256,7 +262,13 @@
             if(text==="" && !confirm("花费 3 点生命跳过此回合？"))
                 return;
             msg("正在提交……");
+            
+            if(window.last_enter_xhr)
+                window.last_enter_xhr.abort();
+            
             var xhr=new XMLHttpRequest();
+            window.last_enter_xhr=xhr;
+            
             xhr.open("post","/enter",true);
             xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded;");
             xhr.onreadystatechange=function() {

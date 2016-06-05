@@ -1,4 +1,11 @@
 <!DOCTYPE html>
+<%
+    def pic(fn):
+        if fn in pic_cache:
+            return 'data:image/png;base64,'+pic_cache[fn]
+        else:
+            return '/static/sao/'+fn
+%>
 <html>
 <head lang="zh">
     <meta charset="UTF-8">
@@ -31,7 +38,7 @@
         }
         #panel {
             position: absolute; right: 50%; margin-right: 50px;
-            background: url(/static/sao/panel.png) no-repeat 100% 100%;;
+            background: url(${pic('panel.png')}) no-repeat 100% 100%;;
             width: 270px; height: 429px;
             display: inline-block;
         }
@@ -56,17 +63,17 @@
         }
         #panel-action>button {
             display: block;
-            background: url(/static/sao/join_btn.png) no-repeat 35px 50%; background-size: contain;
+            background: url(${pic('join_btn.png')}) no-repeat 35px 50%; background-size: contain;
             width: 100%; height: 32px; margin-top: 10px;
             line-height: 22px; font-size: 22px;
             text-align: left; padding-left: 80px;
             border: 0;
         }
         #panel-action>button:hover {
-            background-image: url(/static/sao/join_btn_hover.png);
+            background-image: url(${pic('join_btn_hover.png')});
         }
         #panel-action>button:disabled {
-            background-image: url(/static/sao/join_btn_disabled.png);
+            background-image: url(${pic('join_btn_disabled.png')});
         }
         #panel-info {
             position: absolute; top: 300px;
@@ -92,16 +99,32 @@
             left:50%; margin-left: -50px;
         }
         .player {
-            background: url(/static/sao/player_card.png) no-repeat; background-clip: border-box; background-size: 100% 46px;
+            background: url(${pic('player_card.png')}) no-repeat; background-clip: border-box; background-size: 100% 46px;
             min-width: 250px; height: 46px;
         }
         .player-name {
+            position: absolute;
+            left: 0;
             line-height: 46px;
             font-size: x-large;
             padding: 0 10px 0 10px; margin: 0;
         }
+        .player-ip {
+            margin-left: 10px;
+            line-height: 46px;
+            font-size: x-large;
+            z-index: 9;
+            opacity: 0;
+            text-shadow: 0 0 3px black;
+        }
+        .player:hover .player-ip {
+            opacity: 1 !important;
+        }
+        .player:hover .player-name {
+            opacity: .3 !important;
+        }
         .ready {
-            background-image: url(/static/sao/player_card_ready.png) !important;
+            background-image: url(${pic('player_card_ready.png')}) !important;
             color: white !important;
         }
         #tooltip {
@@ -152,7 +175,6 @@
             resize_event();
             $(window).on("resize",resize_event);
             setInterval(refresh,1500);
-            setTimeout(preload_image,2500);
             refresh();
         });
         function msg(s) { //todo
@@ -182,11 +204,16 @@
                     var pdata=response["plist"];
                 plist.html("");
                 for(var pos=0;pos<pdata.length;pos++) {
-                    var tmp=document.createElement("div"),sub=document.createElement("span");
-                    sub.className="sao-font player-name";
-                    sub.textContent=pdata[pos]["name"];
+                    var tmp=document.createElement("div"),
+                        sub_name=document.createElement("span"),
+                        sub_ip=document.createElement("span");
+                    sub_name.className="sao-font player-name";
+                    sub_ip.className="sao-font player-ip";
+                    sub_name.textContent=pdata[pos]["name"];
+                    sub_ip.textContent=pdata[pos]["ip"];
                     tmp.className=pdata[pos]["okay"]?"player ready":"player";
-                    tmp.appendChild(sub);
+                    tmp.appendChild(sub_ip);
+                    tmp.appendChild(sub_name);
                     plist.append(tmp);
                 }
                 resize_event();
@@ -255,30 +282,13 @@
             if(status=="okay")
                 okay();
         }
-        function preload_image() {
-            (function(x) {
-                for(var pos=0;pos<x.length;pos++) {
-                    var tmp=new Image();
-                    tmp.src=x[pos];
-                }
-            })([
-                "/static/sao/dead.png",
-                "/static/sao/dialog.png",
-                "/static/sao/ex.png",
-                "/static/sao/dead.png",
-                "/static/sao/left_addon.png",
-                "/static/sao/lifebar_bg.png",
-                "/static/sao/main_bg.png",
-                "/static/sao/ok_btn.png",
-                "/static/sao/ok_btn_hover.png",
-                "/static/sao/ok_btn_disabled.png",
-                "/static/sao/player.png",
-                "/static/sao/sp_green.png"
-            ]);
-        }
     </script>
 </head>
 <body onblur="_unjoin()"><div class="container">
+    <!--[if IE]>
+        <span style="color:yellow; background-color: red; font-size: 2em; z-index: 99999;">暂不支持IE浏览器访问</span>
+    <![endif]-->
+    
     <div id="panel">
         <p id="panel-title" class="sao-font">Join</p>
         <div id="tooltip" class="yahei fade"></div>
