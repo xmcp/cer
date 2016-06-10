@@ -28,6 +28,7 @@
             font-size: x-large;
             font-family: SAO, Consolas, monospace !important;
             letter-spacing: 1px;
+            width: 350px;
         }
     </style>
     <script>
@@ -36,7 +37,7 @@
                 $("#result").text(x);
             }
             var xhr=new XMLHttpRequest();
-            xhr.open("post","/cardinal",true);
+            xhr.open("post","?",true);
             xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded");
             xhr.onreadystatechange=function() {
                 if(this.readyState!=4)

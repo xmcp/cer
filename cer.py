@@ -23,13 +23,19 @@ def post_only():
         cherrypy.response.headers['Allow']='POST'
         raise cherrypy.HTTPError(405)
 cherrypy.tools.post=cherrypy.Tool('on_start_resource',post_only)
-MAXLIVE=10
-LIFESTEP=2
+
+MAXLIVE=int(config.max_live)
+assert MAXLIVE>0, 'bad config: maxlive should be positive'
+LIFESTEP=int(config.life_step)
+assert LIFESTEP>0, 'bad config: lifestep should be positive'
+SKIPCOST=int(config.skip_cost)
+assert SKIPCOST>=0, 'bad config: skipcost should not be negative'
 
 cardinal_psw='%12d'%random.randrange(10**13)
+cardinal_su_enabled=True
 def yui_auth(_,u,p):
     import hashlib
-    if u=='uiharu' and p==cardinal_psw:
+    if cardinal_su_enabled and u=='uiharu' and p==cardinal_psw:
         return True
     hahaha='%r,%r'%(u,p)
     for i in range(10007):
@@ -116,7 +122,7 @@ class Cer:
         qipa='内部错误: 配置文件没有返回正确的结果'
         if self.players[player]['name']!=cherrypy.session['name']:
             return '错误: 不是你的回合'
-        if self.players[player]['live']<=3:
+        if self.players[player]['live']<=SKIPCOST:
             return '错误: 生命不足'
         result=config.skip(self.current)
         if 'valid' not in result:
@@ -125,7 +131,7 @@ class Cer:
             if 'after' not in result:
                 return qipa
             self.current=result['after']
-            self.players[player]['live']-=3
+            self.players[player]['live']-=SKIPCOST
             self.wordCount+=1
             self._next_turn()
             return None
@@ -234,7 +240,7 @@ class Cer:
         auth(self.game_number) # session cleanup
         return Template(filename=os.path.join(server_path,'template/game.html'),input_encoding='utf-8')\
             .render(players=self.players,username=cherrypy.session['name'] if 'name' in cherrypy.session else None,
-            MAXLIVE=MAXLIVE,desc=config.description,pic_cache=pic_cache)
+            MAXLIVE=MAXLIVE,desc=config.description,pic_cache=pic_cache,skipcost=SKIPCOST)
 
     def game_status(self):
         if not self.playing:
@@ -252,7 +258,7 @@ class Cer:
     def wait_status(self,now):
         count=0
         cherrypy.session.release_lock()
-        while now==self.game_status() and count<25:
+        while now==self.game_status() and count<40:
             time.sleep(.25)
             count+=1
         return self.game_status()
@@ -260,13 +266,13 @@ class Cer:
     @cherrypy.expose()
     @cherrypy.tools.post()
     def enter(self,word):
-        if not self.playing:
-            return json.dumps({
-                'error':'游戏结束'
-            })
         if not auth(self.game_number):
             return json.dumps({
                 'error':'您没有加入游戏'
+            })
+        if not self.playing:
+            return json.dumps({
+                'error':'游戏结束'
             })
         if cherrypy.session['name'] in self.cardinal_banname or cherrypy.request.remote.ip in self.cardinal_banip:
             return json.dumps({
@@ -304,7 +310,10 @@ class Cer:
     def cardinal(self,cmd=None):
         if cmd is None:
              return Template(filename=os.path.join(server_path,'template/cardinal.html'),input_encoding='utf-8').render()
+        
+        global cardinal_su_enabled
         line=cmd.split(' ')
+        
         if line==['']:
             return 'Cardinal Ready'
         elif line==['game','pause']:
@@ -368,15 +377,24 @@ class Cer:
         elif line[:2]==['set','pos'] and len(line)==3:
             self.activeNum=int(line[2])
             return 'Position is Set'
-        elif line[:1]==['system']:
-            return 'Errcode is %d'%os.system(' '.join(line[1:]))
+        elif line==['su','on']:
+            cardinal_su_enabled=True
+            return 'Super User Enabled'
+        elif line==['su','off']:
+            cardinal_su_enabled=False
+            return 'Super User Disabled'
+        elif line[:1]==['eval']:
+            try:
+                return str(eval(' '.join(line[1:])))
+            except Exception as e:
+                return '%r'%e
         else:
             return 'Error: Bad Command'
 
 print('从 config.py 加载规则: %s'%config.description)
 print('Cardinal系统 用户名: uiharu 密码: %s  请公正使用'%cardinal_psw)
 print('您的 IP 地址: %s'%' '.join(socket.gethostbyname_ex(socket.gethostname())[2]))
-print('正在启动服务器……请用 7654 端口访问')
+print('正在启动服务器…… 请用 7654 端口访问')
 print('='*79+'\n')
 
 conf={
@@ -388,8 +406,8 @@ conf={
         'tools.response_headers.on': True,
     },
     '/': {
-        'tools.sessions.on':True,
-        'tools.gzip.on':True,
+        'tools.sessions.on': True,
+        'tools.gzip.on': True,
         #'tools.sessions.locking':'explicit',
     },
     '/static': {
@@ -401,10 +419,11 @@ conf={
         'tools.response_headers.headers': [
             ('Cache-Control','max-age=3600'),
         ],
+        'tools.sessions.on': False,
     },
     '/cardinal': {
-        'tools.auth_basic.on':True,
-        'tools.auth_basic.realm':'Cardinal',
+        'tools.auth_basic.on': True,
+        'tools.auth_basic.realm': 'Cardinal',
         'tools.auth_basic.checkpassword': yui_auth,
     }
 }

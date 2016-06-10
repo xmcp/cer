@@ -7,7 +7,11 @@
 Cer by @xmcp.
 https://github.com/xmcp/cer
 """
-description='“X可以随便接”规则' #简要介绍这个规则
+
+description='“X可以随便接”' #简要介绍这个规则
+life_step=2 #超时减血的时间（秒），应为正整数
+max_live=10 #玩家的生命值上限，应为正整数
+skip_cost=3 #跳过当前回合所需的生命值，应为非负整数
 
 import random
 
