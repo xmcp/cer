@@ -9,7 +9,7 @@ executables = [Executable(script='cer.py',
 setup(name='cer',
       version='1.0',
       description='史诗级网游',
-      options = {"build_exe":{"optimize": 2,'includes' : 'cherrypy.wsgiserver.wsgiserver3'}},
+      options = {"build_exe":{"optimize": 2,'includes' : 'cherrypy.wsgiserver'}},
       executables=executables)
       
 print('===== CLEANING UP =====')
