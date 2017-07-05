@@ -1,0 +1,23 @@
+#LIFESTEP = 2
+#MAXLIVE = 10
+#SKIPCOST = 3
+
+#config.description = ''
+
+def init():
+    pass
+    
+#config.init = init
+
+def validate(before,after):
+    pass
+    
+#config.validate = validate
+
+def skip(before):
+    return {
+        'valid': True,
+        'after': '',
+    }
+    
+#config.skip = skip

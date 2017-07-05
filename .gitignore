@@ -2,4 +2,4 @@
 __pycache__/
 *.pyc
 thumbs.db
-/build/
+build/

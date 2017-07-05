@@ -50,7 +50,7 @@ def skip(before):
     
     参数 before 是当前单词。
     如果可以跳过，返回 {'valid': True, 'after': x}，其中 x 是下一回合的单词。
-    如果不可以，返回 {'valid': False, 'error': r}，其中 r 是这个操作不合法的原因。
+    如果不可以，返回 {'valid': False, 'reason': r}，其中 r 是这个操作不合法的原因。
     """
     return {
         'valid':True,
